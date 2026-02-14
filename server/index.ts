@@ -6,7 +6,7 @@ import { handleUpdateFace } from './src/tool-handler.js';
 import type { Sender } from './src/tool-handler.js';
 import { createHeartbeatService } from './src/heartbeat-service.js';
 import { registerCliCommands } from './src/cli-commands.js';
-import { heartbeatAckFrame } from './src/frames.js';
+import { heartbeatAckFrame, modeFrame } from './src/frames.js';
 import type { ClawFaceConfig } from './src/types.js';
 import { DEFAULT_CONFIG } from './src/types.js';
 import { setSender } from './src/sender-ref.js';
@@ -31,6 +31,10 @@ export default {
           const frame = JSON.parse(msg);
           if (frame.type === 'heartbeat') {
             server.send(heartbeatAckFrame()).catch(() => {});
+          } else if (frame.type === 'hook_cmd' && frame.cmd === 'thinking') {
+            // 内部 loopback 命令：hook 通过 localhost 触发，用已连接的 socket 转发给客户端
+            console.log('[ClawFace] hook_cmd: sending THINKING to client');
+            server.send(modeFrame('THINKING')).catch(() => {});
           }
         } catch { /* ignore parse errors */ }
       };

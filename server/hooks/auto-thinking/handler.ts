@@ -2,49 +2,37 @@ import dgram from 'node:dgram';
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** Same path used by UdpServer to persist client address */
 const CLIENT_FILE = path.join(
   process.env.HOME || process.env.USERPROFILE || '/tmp',
   '.clawface-client.json',
 );
 
-const THINKING_FRAME = JSON.stringify({ type: 'mode', mode: 'THINKING' });
+// 内部命令帧，发给 localhost 让 UdpServer 处理
+const THINKING_CMD = JSON.stringify({ type: 'hook_cmd', cmd: 'thinking' });
 
 const handler = async (event: any) => {
-  if (event.type !== 'agent' || event.action !== 'bootstrap') return;
+  console.log('[auto-thinking] hook fired, event:', JSON.stringify(event).slice(0, 200));
 
-  let clientInfo: { host: string; port: number; listenPort: number };
+  // 宽松匹配：不再严格校验 event.type/action，只要 hook 被调用就执行
+  let listenPort = 9527; // 默认端口
   try {
     const raw = fs.readFileSync(CLIENT_FILE, 'utf-8');
-    clientInfo = JSON.parse(raw);
-  } catch {
-    // No client file — plugin hasn't seen a client yet, nothing to do
-    return;
+    const info = JSON.parse(raw);
+    if (info.listenPort) listenPort = info.listenPort;
+    console.log('[auto-thinking] client file found, listenPort:', listenPort);
+  } catch (err) {
+    console.log('[auto-thinking] no client file, using default port');
   }
 
-  if (!clientInfo.host || !clientInfo.port) return;
-
-  // Send THINKING frame via a temporary UDP socket bound to the plugin's listen port
-  // so the packet appears to come from the same source the client knows
+  // 发送内部命令到 localhost，由 UdpServer 转发
   return new Promise<void>((resolve) => {
-    const socket = dgram.createSocket('udp4');
-    const buf = Buffer.from(THINKING_FRAME, 'utf-8');
-
-    // Bind to the same port the server listens on, using SO_REUSEADDR
-    socket.bind({ port: clientInfo.listenPort, exclusive: false }, () => {
-      socket.send(buf, 0, buf.length, clientInfo.port, clientInfo.host, () => {
-        socket.close();
-        resolve();
-      });
-    });
-
-    // If bind fails (port busy without reuse support), try sending without bind
-    socket.on('error', () => {
-      const fallback = dgram.createSocket('udp4');
-      fallback.send(buf, 0, buf.length, clientInfo.port, clientInfo.host, () => {
-        fallback.close();
-        resolve();
-      });
+    const sock = dgram.createSocket('udp4');
+    const buf = Buffer.from(THINKING_CMD, 'utf-8');
+    sock.send(buf, 0, buf.length, listenPort, '127.0.0.1', (err) => {
+      if (err) console.error('[auto-thinking] send error:', err.message);
+      else console.log('[auto-thinking] loopback cmd sent to localhost:', listenPort);
+      sock.close();
+      resolve();
     });
   });
 };
