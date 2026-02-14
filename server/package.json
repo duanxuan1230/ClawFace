@@ -1,5 +1,5 @@
 {
-  "name": "openclaw-plugin-clawface",
+  "name": "clawface",
   "version": "0.1.0",
   "description": "OpenClaw plugin — control the ClawFace Android desktop pet via UDP",
   "type": "module",

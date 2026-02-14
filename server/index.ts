@@ -19,14 +19,13 @@ export default {
     const config: ClawFaceConfig = { ...DEFAULT_CONFIG, ...userConfig };
 
     let sender: Sender;
-    let cleanup: () => void;
+    let startNetwork: () => Promise<void>;
+    let stopNetwork: () => void;
 
     if (config.mode === 'server') {
-      // Server mode: listen on port, auto-detect client from incoming packets
       const server = new UdpServer(config.listenPort);
 
       server.onMessage = (msg) => {
-        // Auto-respond to heartbeat from Android client
         try {
           const frame = JSON.parse(msg);
           if (frame.type === 'heartbeat') {
@@ -35,22 +34,20 @@ export default {
         } catch { /* ignore parse errors */ }
       };
 
-      // Start listening (async, but register is sync — fire and forget)
-      server.start().then(() => {
+      sender = server;
+      startNetwork = async () => {
+        await server.start();
         console.log(`[ClawFace] Server mode — listening on UDP :${config.listenPort}`);
         console.log('[ClawFace] Waiting for Android client to connect...');
-      }).catch((err) => {
-        console.error('[ClawFace] Failed to start UDP server:', err);
-      });
-
-      sender = server;
-      cleanup = () => server.destroy();
+      };
+      stopNetwork = () => server.destroy();
     } else {
-      // Direct mode: send to specific host:port (LAN testing)
       const directSender = new UdpSender(config.targetHost, config.targetPort);
-      console.log(`[ClawFace] Direct mode — target ${config.targetHost}:${config.targetPort}`);
       sender = directSender;
-      cleanup = () => directSender.destroy();
+      startNetwork = async () => {
+        console.log(`[ClawFace] Direct mode — target ${config.targetHost}:${config.targetPort}`);
+      };
+      stopNetwork = () => directSender.destroy();
     }
 
     // 1. Register the LLM-callable tool
@@ -68,22 +65,27 @@ export default {
       console.warn('[ClawFace] Failed to register tool:', err);
     }
 
-    // 2. Register heartbeat background service
-    if (config.enableHeartbeat) {
-      const heartbeat = createHeartbeatService(sender, config.heartbeatIntervalMs);
-      try {
-        api.registerService({
-          id: 'clawface-heartbeat',
-          start: () => heartbeat.start(),
-          stop: () => {
-            heartbeat.stop();
-            cleanup();
-          },
-        });
-      } catch (err) {
-        console.warn('[ClawFace] Failed to register service:', err);
-        heartbeat.start();
-      }
+    // 2. Register background service (starts network + heartbeat on service start)
+    const heartbeat = config.enableHeartbeat
+      ? createHeartbeatService(sender, config.heartbeatIntervalMs)
+      : null;
+
+    try {
+      api.registerService({
+        id: 'clawface-network',
+        start: async () => {
+          await startNetwork();
+          heartbeat?.start();
+        },
+        stop: () => {
+          heartbeat?.stop();
+          stopNetwork();
+        },
+      });
+    } catch (err) {
+      console.warn('[ClawFace] Failed to register service:', err);
+      // Fallback: start directly if registerService not available
+      startNetwork().then(() => heartbeat?.start()).catch(console.error);
     }
 
     // 3. Register CLI commands
