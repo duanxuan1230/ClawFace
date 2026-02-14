@@ -114,33 +114,12 @@ npx tsx bin/clawface-cli.ts serve --port 9527
 
 ### 4. 接入 OpenClaw
 
-将插件部署到 OpenClaw 插件目录：
-
 ```bash
-cp -r server/ ~/.openclaw/plugins/clawface
-cd ~/.openclaw/plugins/clawface && npm install
+cd server
+openclaw plugins install .
 ```
 
-编辑 `~/.openclaw/openclaw.json`，添加插件配置：
-
-```json
-{
-  "plugins": {
-    "clawface": {
-      "enabled": true,
-      "path": "~/.openclaw/plugins/clawface",
-      "config": {
-        "mode": "server",
-        "listenPort": 9527,
-        "enableHeartbeat": true,
-        "heartbeatIntervalMs": 30000
-      }
-    }
-  }
-}
-```
-
-重启 OpenClaw 后，LLM 会自动在每次对话时调用 `update_face` 工具控制手机表情。
+一条命令自动完成插件注册和配置写入。重启 OpenClaw 后，LLM 会自动在每次对话时调用 `update_face` 工具控制手机表情。
 
 ## 网络模式
 
@@ -205,20 +184,22 @@ cd ~/.openclaw/plugins/clawface && npm install
 # 1. 在 VPS 上克隆项目
 git clone <repo-url> ~/ClawFace
 
-# 2. 安装服务端依赖
-cd ~/ClawFace/server && npm install
+# 2. 一条命令安装插件
+cd ~/ClawFace/server
+openclaw plugins install .
 
-# 3. 复制到 OpenClaw 插件目录
-mkdir -p ~/.openclaw/plugins
-ln -s ~/ClawFace/server ~/.openclaw/plugins/clawface
-
-# 4. 开放防火墙 UDP 端口
+# 3. 开放防火墙 UDP 端口
 sudo ufw allow 9527/udp   # Ubuntu/Debian
 # 云厂商还需在安全组中放行 UDP 9527
 
-# 5. 配置 OpenClaw（编辑 ~/.openclaw/openclaw.json 添加插件）
+# 4. 重启 OpenClaw
+```
 
-# 6. 重启 OpenClaw
+**后续更新**：
+
+```bash
+cd ~/ClawFace && git pull
+cd server && openclaw plugins install .
 ```
 
 ## 技术栈
