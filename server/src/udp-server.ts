@@ -1,4 +1,12 @@
 import dgram from 'node:dgram';
+import fs from 'node:fs';
+import path from 'node:path';
+
+/** Default path for the client address file */
+const DEFAULT_CLIENT_FILE = path.join(
+  process.env.HOME || process.env.USERPROFILE || '/tmp',
+  '.clawface-client.json',
+);
 
 /**
  * Bidirectional UDP server.
@@ -19,11 +27,15 @@ export class UdpServer {
   private clientHost: string | null = null;
   private clientPort: number | null = null;
 
+  /** Path to write client address for cross-process sharing (hooks) */
+  private clientFilePath: string;
+
   /** Callback for incoming messages */
   onMessage: ((msg: string, rinfo: dgram.RemoteInfo) => void) | null = null;
 
-  constructor(listenPort: number) {
+  constructor(listenPort: number, clientFilePath?: string) {
     this.listenPort = listenPort;
+    this.clientFilePath = clientFilePath ?? DEFAULT_CLIENT_FILE;
   }
 
   /**
@@ -39,6 +51,9 @@ export class UdpServer {
         // Remember client address for reverse communication
         this.clientHost = rinfo.address;
         this.clientPort = rinfo.port;
+
+        // Persist client address to file so hooks can read it
+        this.writeClientFile();
 
         const message = msg.toString('utf-8');
         this.onMessage?.(message, rinfo);
@@ -108,5 +123,29 @@ export class UdpServer {
     }
     this.clientHost = null;
     this.clientPort = null;
+    this.removeClientFile();
+  }
+
+  /** Write current client address to a JSON file for cross-process sharing */
+  private writeClientFile(): void {
+    try {
+      const data = JSON.stringify({
+        host: this.clientHost,
+        port: this.clientPort,
+        listenPort: this.listenPort,
+        ts: Date.now(),
+      });
+      fs.writeFileSync(this.clientFilePath, data, 'utf-8');
+    } catch { /* best-effort */ }
+  }
+
+  /** Remove client file on shutdown */
+  private removeClientFile(): void {
+    try { fs.unlinkSync(this.clientFilePath); } catch { /* ignore */ }
+  }
+
+  /** Get the client file path (for hooks to read) */
+  static getClientFilePath(): string {
+    return DEFAULT_CLIENT_FILE;
   }
 }
