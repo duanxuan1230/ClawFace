@@ -99,5 +99,17 @@ export default {
     } catch (err) {
       console.warn('[ClawFace] Failed to register CLI commands:', err);
     }
+
+    // 4. Register plugin hooks (auto-thinking on agent start)
+    try {
+      import('openclaw/plugin-sdk').then(({ registerPluginHooksFromDir }) => {
+        registerPluginHooksFromDir(api, './hooks');
+        console.log('[ClawFace] Registered hooks');
+      }).catch(() => {
+        console.warn('[ClawFace] openclaw/plugin-sdk not available, hooks skipped');
+      });
+    } catch (err) {
+      console.warn('[ClawFace] Failed to register hooks:', err);
+    }
   },
 };
