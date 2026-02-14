@@ -48,12 +48,14 @@ export class UdpServer {
       this.socket = socket;
 
       socket.on('message', (msg, rinfo) => {
-        // Remember client address for reverse communication
-        this.clientHost = rinfo.address;
-        this.clientPort = rinfo.port;
+        const isLoopback = rinfo.address === '127.0.0.1' || rinfo.address === '::1';
 
-        // Persist client address to file so hooks can read it
-        this.writeClientFile();
+        // Only remember non-loopback addresses as the real client
+        if (!isLoopback) {
+          this.clientHost = rinfo.address;
+          this.clientPort = rinfo.port;
+          this.writeClientFile();
+        }
 
         const message = msg.toString('utf-8');
         this.onMessage?.(message, rinfo);
