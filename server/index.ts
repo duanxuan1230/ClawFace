@@ -56,8 +56,9 @@ export default {
         name: 'update_face',
         description: TOOL_DESCRIPTION,
         parameters: updateFaceSchema,
-        async execute(params: any) {
-          return await handleUpdateFace(params, sender);
+        async execute(_id: string, params: any) {
+          const result = await handleUpdateFace(params, sender);
+          return { content: [{ type: 'text', text: result }] };
         },
       });
       console.log('[ClawFace] Registered tool: update_face');

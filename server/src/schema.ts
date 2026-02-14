@@ -17,6 +17,7 @@ export const updateFaceSchema = {
     expression: {
       type: 'object' as const,
       description: 'Fine-tune individual face parameters on top of the emotion preset.',
+      required: [] as string[],
       properties: {
         eyeScaleY:    { type: 'number' as const, minimum: 0.0, maximum: 1.5, description: 'Eye openness (0=closed, 1=normal, 1.5=wide)' },
         eyeTilt:      { type: 'number' as const, minimum: -30, maximum: 30, description: 'Eye tilt degrees (positive=outer corner up)' },
