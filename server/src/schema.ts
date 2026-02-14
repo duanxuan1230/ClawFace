@@ -4,6 +4,7 @@
  */
 export const updateFaceSchema = {
   type: 'object' as const,
+  required: [] as string[],
   properties: {
     emotion: {
       type: 'string' as const,

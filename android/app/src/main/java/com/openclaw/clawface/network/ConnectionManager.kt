@@ -82,7 +82,13 @@ class ConnectionManager {
                 lastDataTime = System.currentTimeMillis()
                 missedHeartbeats = 0
 
-                updateState(ConnectionState.CONNECTED)
+                // Don't mark CONNECTED yet — wait for heartbeat_ack
+                // Send an immediate heartbeat to trigger server response
+                launch {
+                    try {
+                        client.send(host, port, """{"type":"heartbeat"}""")
+                    } catch (_: Exception) {}
+                }
                 startHeartbeat()
                 startStandbyDetection()
 
@@ -109,6 +115,10 @@ class ConnectionManager {
             is Frame.HeartbeatAck -> {
                 missedHeartbeats = 0
                 lastDataTime = now
+                // First ack = connection confirmed
+                if (_connectionState.value == ConnectionState.CONNECTING) {
+                    updateState(ConnectionState.CONNECTED)
+                }
             }
             is Frame.Heartbeat -> {
                 missedHeartbeats = 0

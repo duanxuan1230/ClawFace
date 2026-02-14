@@ -66,6 +66,11 @@ class MainActivity : AppCompatActivity() {
             overlayService = faceBinder.getService()
             isBound = true
             syncSlidersToCurrentEmotion()
+            // Resume connection status polling if there's an active connection
+            val state = overlayService?.getConnectionState()
+            if (state != null && state != ConnectionManager.ConnectionState.DISCONNECTED) {
+                startConnectionStatusPolling()
+            }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
