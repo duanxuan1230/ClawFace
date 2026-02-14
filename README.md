@@ -15,6 +15,8 @@ ClawFace 以**悬浮窗桌宠**的形式存在于 Android 手机上，通过 UDP
 - **毛玻璃 UI** — 悬浮窗和控制面板均采用 Glass Morphism 风格
 - **OpenClaw 插件** — LLM 通过 Function Calling 自主调用 `update_face` 工具控制表情
 - **双向 UDP 通信** — 支持 VPS 服务器模式（NAT 穿透）和局域网直连模式
+- **自动 Thinking 状态** — 收到消息立即切换 Thinking 动画，填充 LLM 响应前的空白期
+- **记住连接信息** — Android 端自动保存上次输入的 IP 和端口
 - **零运行时依赖** — 服务端仅使用 `node:dgram`，无第三方依赖
 
 ## 项目结构
@@ -46,7 +48,12 @@ ClawFace/
 │   │   ├── udp-server.ts       # 服务器模式 UDP 双向通信
 │   │   ├── tool-handler.ts     # update_face 工具处理逻辑
 │   │   ├── heartbeat-service.ts # 心跳后台服务
+│   │   ├── sender-ref.ts       # Sender 实例共享引用
 │   │   └── cli-commands.ts     # OpenClaw CLI 命令
+│   ├── hooks/
+│   │   └── auto-thinking/      # 自动 Thinking 状态 Hook
+│   │       ├── HOOK.md          # Hook 元数据
+│   │       └── handler.ts       # agent:bootstrap 事件处理器
 │   └── bin/
 │       └── clawface-cli.ts     # 独立 CLI 测试工具
 │
@@ -114,12 +121,41 @@ npx tsx bin/clawface-cli.ts serve --port 9527
 
 ### 4. 接入 OpenClaw
 
+**生产安装**（拷贝到插件目录）：
+
 ```bash
 cd server
 openclaw plugins install .
 ```
 
-一条命令自动完成插件注册和配置写入。重启 OpenClaw 后，LLM 会自动在每次对话时调用 `update_face` 工具控制手机表情。
+**开发安装**（符号链接，推荐）：
+
+```bash
+cd server
+openclaw plugins install -l .
+```
+
+`-l` 模式创建符号链接而非拷贝，后续 `git pull` 更新代码后只需重启 OpenClaw 即可生效，无需重新安装插件。
+
+安装完成后，LLM 会自动在每次对话时调用 `update_face` 工具控制手机表情。
+
+**注册 auto-thinking Hook**（可选但推荐）：
+
+在 OpenClaw 配置文件（`~/.openclaw/openclaw.json`）中添加 hooks 扫描目录：
+
+```json
+{
+  "hooks": {
+    "internal": {
+      "load": {
+        "extraDirs": ["/path/to/ClawFace/server/hooks"]
+      }
+    }
+  }
+}
+```
+
+注册后，用户发送消息时手机会立即切换 Thinking 动画，填充 LLM 响应前的等待空白期。
 
 ## 网络模式
 
@@ -184,23 +220,29 @@ openclaw plugins install .
 # 1. 在 VPS 上克隆项目
 git clone <repo-url> ~/ClawFace
 
-# 2. 一条命令安装插件
+# 2. 安装插件（-l 链接模式，方便后续热更新）
 cd ~/ClawFace/server
-openclaw plugins install .
+openclaw plugins install -l .
 
-# 3. 开放防火墙 UDP 端口
+# 3. 注册 auto-thinking hook（编辑 ~/.openclaw/openclaw.json）
+#    添加: "hooks": { "internal": { "load": { "extraDirs": ["~/ClawFace/server/hooks"] } } }
+
+# 4. 开放防火墙 UDP 端口
 sudo ufw allow 9527/udp   # Ubuntu/Debian
 # 云厂商还需在安全组中放行 UDP 9527
 
-# 4. 重启 OpenClaw
+# 5. 重启 OpenClaw
+openclaw gateway restart
 ```
 
-**后续更新**：
+**后续更新**（无需重新安装插件）：
 
 ```bash
 cd ~/ClawFace && git pull
-cd server && openclaw plugins install .
+openclaw gateway restart
 ```
+
+> 因为使用了 `-l` 链接模式安装，`git pull` 后重启即可生效。
 
 ## 技术栈
 
@@ -211,7 +253,7 @@ cd server && openclaw plugins install .
 | 通信协议 | UDP + JSON |
 | 渲染 | 纯程序化矢量（Path/Paint/ShadowLayer） |
 | 动画 | Choreographer + 程序化噪音函数 |
-| AI 集成 | OpenClaw Plugin API (registerTool / registerService) |
+| AI 集成 | OpenClaw Plugin API (registerTool / registerService) + Hook |
 
 ## 开发状态
 
@@ -220,6 +262,7 @@ cd server && openclaw plugins install .
 - [x] Phase 2: 动画系统 — 眨眼 + 程序化噪音动画 + 拖拽
 - [x] Phase 3: 网络通信 — UDP + 心跳 + 断线重连
 - [x] Phase 4: 服务端插件 — OpenClaw 集成 + 双向 UDP
+- [x] Phase 5: 体验优化 — 自动 Thinking 状态 + IP 记忆 + 连接验证
 
 ## 许可证
 
