@@ -4,7 +4,6 @@
   "version": "0.1.0",
   "description": "Control the ClawFace Android desktop pet via UDP — emotion display terminal for OpenClaw",
   "entry": "./index.ts",
-  "hooks": ["hooks/auto-thinking"],
   "configSchema": {
     "type": "object",
     "properties": {

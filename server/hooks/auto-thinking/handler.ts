@@ -1,7 +1,9 @@
 import { getSender } from '../../src/sender-ref.js';
 import { modeFrame } from '../../src/frames.js';
 
-export default async function handler() {
+const handler = async (event: any) => {
+  if (event.type !== 'agent' || event.action !== 'bootstrap') return;
+
   const sender = getSender();
   if (!sender) return;
 
@@ -10,4 +12,6 @@ export default async function handler() {
   } catch {
     // Silently ignore — client may not be connected yet
   }
-}
+};
+
+export default handler;
