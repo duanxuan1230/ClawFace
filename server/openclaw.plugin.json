@@ -1,0 +1,50 @@
+{
+  "id": "clawface",
+  "name": "ClawFace",
+  "version": "0.1.0",
+  "description": "Control the ClawFace Android desktop pet via UDP — emotion display terminal for OpenClaw",
+  "entry": "./index.ts",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "targetHost": {
+        "type": "string",
+        "default": "127.0.0.1",
+        "description": "IP address of the Android device running ClawFace"
+      },
+      "targetPort": {
+        "type": "number",
+        "default": 9527,
+        "description": "UDP port the ClawFace app listens on (direct mode)"
+      },
+      "listenPort": {
+        "type": "number",
+        "default": 9527,
+        "description": "UDP port to listen on for incoming connections (server mode)"
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["server", "direct"],
+        "default": "server",
+        "description": "server = listen + auto-detect client (VPS), direct = send to targetHost:targetPort (LAN)"
+      },
+      "heartbeatIntervalMs": {
+        "type": "number",
+        "default": 30000,
+        "description": "Heartbeat interval in milliseconds"
+      },
+      "enableHeartbeat": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable background heartbeat service"
+      }
+    },
+    "additionalProperties": false
+  },
+  "uiHints": {
+    "mode": { "label": "Mode", "placeholder": "server" },
+    "targetHost": { "label": "Device IP", "placeholder": "192.168.1.100" },
+    "targetPort": { "label": "UDP Port", "placeholder": "9527" },
+    "listenPort": { "label": "Listen Port", "placeholder": "9527" }
+  }
+}

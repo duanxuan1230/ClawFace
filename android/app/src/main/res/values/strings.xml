@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClawFace</string>
+    <string name="overlay_notification_channel">ClawFace Overlay</string>
+    <string name="overlay_notification_title">ClawFace is running</string>
+    <string name="overlay_notification_text">Tap to open settings</string>
+    <string name="btn_start">Start ClawFace</string>
+    <string name="btn_stop">Stop ClawFace</string>
+    <string name="label_server_ip">Server IP</string>
+    <string name="label_server_port">Server Port</string>
+    <string name="hint_ip">192.168.1.100</string>
+    <string name="hint_port">9527</string>
+    <string name="permission_overlay_required">Overlay permission is required for ClawFace to work.</string>
+    <string name="btn_grant_permission">Grant Permission</string>
+</resources>

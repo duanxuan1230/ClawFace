@@ -1,0 +1,18 @@
+{
+  "name": "openclaw-plugin-clawface",
+  "version": "0.1.0",
+  "description": "OpenClaw plugin — control the ClawFace Android desktop pet via UDP",
+  "type": "module",
+  "main": "index.ts",
+  "bin": {
+    "clawface-cli": "./bin/clawface-cli.ts"
+  },
+  "scripts": {
+    "cli": "tsx bin/clawface-cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "tsx": "^4.7",
+    "typescript": "^5.4"
+  }
+}
