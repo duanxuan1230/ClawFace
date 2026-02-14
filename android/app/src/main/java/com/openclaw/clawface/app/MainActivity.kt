@@ -180,6 +180,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupNetworkButtons() {
+        // Restore last used host/port
+        val prefs = getSharedPreferences("clawface_prefs", MODE_PRIVATE)
+        prefs.getString("last_host", null)?.let { binding.etHost.setText(it) }
+        val savedPort = prefs.getString("last_port", null)
+        if (!savedPort.isNullOrEmpty()) binding.etPort.setText(savedPort)
+
         binding.btnConnect.setOnClickListener {
             val host = binding.etHost.text.toString().trim()
             val portStr = binding.etPort.text.toString().trim()
@@ -188,6 +194,13 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             val port = portStr.toIntOrNull() ?: AppConfig.DEFAULT_PORT
+
+            // Save for next launch
+            prefs.edit()
+                .putString("last_host", host)
+                .putString("last_port", portStr)
+                .apply()
+
             overlayService?.startConnection(host, port)
             binding.tvConnectionStatus.text = "Status: Connecting..."
             startConnectionStatusPolling()

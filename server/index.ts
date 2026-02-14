@@ -9,6 +9,7 @@ import { registerCliCommands } from './src/cli-commands.js';
 import { heartbeatAckFrame } from './src/frames.js';
 import type { ClawFaceConfig } from './src/types.js';
 import { DEFAULT_CONFIG } from './src/types.js';
+import { setSender } from './src/sender-ref.js';
 
 export default {
   id: 'clawface',
@@ -49,6 +50,9 @@ export default {
       };
       stopNetwork = () => directSender.destroy();
     }
+
+    // Share sender reference for hooks
+    setSender(sender);
 
     // 1. Register the LLM-callable tool
     try {
