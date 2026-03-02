@@ -5,21 +5,16 @@ import android.graphics.Paint
 import android.graphics.RectF
 
 /**
- * Utility for rendering glow/halo effects around the face.
- * Uses Paint.setShadowLayer for outer glow on software-rendered layers.
- * Renders as rounded rectangle to match the glass card shape.
+ * Ambient glow/halo behind the ghost.
+ * Softer and rounder than before to match the ghost body shape.
  */
 object GlowEffect {
 
     private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 2f
     }
     private val glowRect = RectF()
 
-    /**
-     * Draw a subtle rounded-rectangle glow around the face card area.
-     */
     fun drawAmbientGlow(
         canvas: Canvas,
         centerX: Float,
@@ -27,25 +22,28 @@ object GlowEffect {
         viewWidth: Float,
         viewHeight: Float,
         cornerRadius: Float,
-        color: Int,
+        @Suppress("UNUSED_PARAMETER") color: Int,
         glowColor: Int,
         alpha: Float,
     ) {
-        val adjustedAlpha = ((glowColor shr 24) and 0xFF) * alpha
-        val adjustedGlowColor = (adjustedAlpha.toInt() shl 24) or (glowColor and 0x00FFFFFF)
+        val adjustedAlpha = ((glowColor ushr 24) and 0xFF) * alpha
+        val adjustedGlowColor = (adjustedAlpha.toInt().coerceIn(0, 255) shl 24) or
+                (glowColor and 0x00FFFFFF)
 
-        // Glow rect matches card inset (0.08f)
-        val halfW = viewWidth * 0.42f * 0.95f
-        val halfH = viewHeight * 0.42f * 0.95f
+        // Slightly larger and rounder to wrap the ghost shape
+        val halfW = viewWidth * 0.40f
+        val halfH = viewHeight * 0.42f
         glowRect.set(
             centerX - halfW, centerY - halfH,
             centerX + halfW, centerY + halfH,
         )
 
         glowPaint.color = adjustedGlowColor
-        glowPaint.setShadowLayer(viewWidth * 0.15f, 0f, 0f, adjustedGlowColor)
-        glowPaint.strokeWidth = viewWidth * 0.015f
+        glowPaint.setShadowLayer(viewWidth * 0.18f, 0f, 0f, adjustedGlowColor)
+        glowPaint.strokeWidth = viewWidth * 0.01f
 
-        canvas.drawRoundRect(glowRect, cornerRadius, cornerRadius, glowPaint)
+        // More rounded corners to match ghost body
+        val r = cornerRadius * 1.5f
+        canvas.drawRoundRect(glowRect, r, r, glowPaint)
     }
 }

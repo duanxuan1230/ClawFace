@@ -7,6 +7,8 @@ import android.graphics.Typeface
 import android.os.SystemClock
 import android.view.View
 import com.openclaw.clawface.config.AppConfig
+import com.openclaw.clawface.rendering.BodyRenderer
+import com.openclaw.clawface.rendering.CheekRenderer
 import com.openclaw.clawface.rendering.EyeRenderer
 import com.openclaw.clawface.rendering.GlassCardRenderer
 import com.openclaw.clawface.rendering.GlowEffect
@@ -17,7 +19,7 @@ import com.openclaw.clawface.state.FaceParams
 
 /**
  * Core rendering view for ClawFace.
- * Draws glass card background, eyes, mouth, and glow effects using procedural vector graphics.
+ * Draws a kawaii ghost character with frosted glass body, cheeks, dot-eyes, and tiny mouth.
  * Uses software rendering layer to ensure ShadowLayer glow effects work correctly.
  */
 class FaceView(context: Context) : View(context) {
@@ -25,14 +27,14 @@ class FaceView(context: Context) : View(context) {
     private val eyeRenderer = EyeRenderer()
     private val mouthRenderer = MouthRenderer()
     private val glassCardRenderer = GlassCardRenderer()
+    private val bodyRenderer = BodyRenderer()
+    private val cheekRenderer = CheekRenderer()
 
-    // Pre-allocated objects
     private val zzzPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = Typeface.DEFAULT_BOLD
         textAlign = Paint.Align.CENTER
     }
 
-    // Current rendering state (updated from outside via setters)
     var faceParams: FaceParams = FaceParams()
         set(value) {
             field = value
@@ -55,7 +57,6 @@ class FaceView(context: Context) : View(context) {
     private var faceHeightPx: Float = 0f
 
     init {
-        // Software layer is required for ShadowLayer glow effects
         setLayerType(LAYER_TYPE_SOFTWARE, null)
     }
 
@@ -71,8 +72,6 @@ class FaceView(context: Context) : View(context) {
         val cx = width / 2f
         val cy = height / 2f
         val offset = animationOffset
-
-        // faceSize for eye/mouth proportions uses the smaller dimension
         val faceSize = minOf(faceWidthPx, faceHeightPx)
         val cornerRadius = faceWidthPx * AppConfig.GLASS_CORNER_RADIUS_RATIO
 
@@ -86,23 +85,31 @@ class FaceView(context: Context) : View(context) {
         // 1. Ambient glow (behind everything)
         GlowEffect.drawAmbientGlow(
             canvas, cx, cy, faceWidthPx, faceHeightPx, cornerRadius,
-            faceParams.color, faceParams.glowColor,
-            offset.alpha,
+            faceParams.color, faceParams.glowColor, offset.alpha,
         )
 
-        // 2. Glass card background
+        // 2. Background glass card (subtle, behind body)
         glassCardRenderer.draw(
             canvas, faceWidthPx, faceHeightPx, cornerRadius,
             faceParams.color, offset.alpha,
         )
 
-        // 3. Eyes
+        // 3. Ghost body (frosted glass clipped to ghost shape)
+        bodyRenderer.draw(
+            canvas, cx, cy, faceWidthPx, faceHeightPx,
+            faceParams, offset.alpha,
+        )
+
+        // 4. Cheek blush (on top of body, under eyes)
+        cheekRenderer.draw(canvas, cx, cy, faceSize, faceParams)
+
+        // 5. Eyes (kawaii dot style)
         eyeRenderer.draw(canvas, cx, cy, faceSize, faceParams)
 
-        // 4. Mouth
+        // 6. Mouth (small cute style)
         mouthRenderer.draw(canvas, cx, cy, faceSize, faceParams)
 
-        // 5. "Zzz" for offline state
+        // 7. "Zzz" for offline state
         if (faceMode == FaceMode.OFFLINE) {
             drawZzz(canvas, cx, cy, faceSize)
         }

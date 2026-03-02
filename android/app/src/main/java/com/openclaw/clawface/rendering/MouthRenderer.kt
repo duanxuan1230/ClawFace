@@ -3,31 +3,33 @@ package com.openclaw.clawface.rendering
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import com.openclaw.clawface.state.FaceParams
 
 /**
- * Renders the mouth as a Bezier curve (closed or open) driven by curve/width/open parameters.
+ * Kawaii mouth renderer — small, cute, dark-filled.
  *
- * When open=0: single stroke bezier line (closed mouth).
- * When open>0: two bezier curves forming a filled closed region (open mouth).
+ * Closed: tiny dark curved stroke.
+ * Open: small dark rounded oval/rect (the "O" mouth).
  */
 class MouthRenderer {
 
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 3f
         strokeCap = Paint.Cap.ROUND
     }
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
     }
     private val mouthPath = Path()
+    private val mouthRect = RectF()
 
     companion object {
-        private const val MOUTH_Y_OFFSET = 0.18f   // below face center
-        private const val MAX_MOUTH_WIDTH = 0.30f   // relative to face size
-        private const val MAX_CURVE_HEIGHT = 0.12f  // max bezier control point offset
-        private const val MAX_OPEN_HEIGHT = 0.10f   // max vertical opening
+        private const val MOUTH_Y_OFFSET = 0.16f     // below face center
+        private const val MAX_MOUTH_WIDTH = 0.10f     // much smaller than before (was 0.30)
+        private const val MAX_CURVE_HEIGHT = 0.04f    // subtler curve (was 0.12)
+        private const val MAX_OPEN_HEIGHT = 0.06f     // smaller opening (was 0.10)
+        private const val MOUTH_DARK_COLOR = 0xFF222233.toInt()
     }
 
     fun draw(
@@ -44,32 +46,26 @@ class MouthRenderer {
 
         if (halfWidth < 1f) return
 
-        // Control point Y offset for curve
         val curveOffset = faceSize * MAX_CURVE_HEIGHT * params.mouthCurve
 
-        // Start and end points
         val leftX = centerX - halfWidth
         val rightX = centerX + halfWidth
 
         mouthPath.rewind()
 
         if (params.mouthOpen <= 0.01f) {
-            // Closed mouth: single bezier stroke
-            drawClosedMouth(canvas, leftX, rightX, mouthY, curveOffset, faceSize, params)
+            drawClosedMouth(canvas, leftX, rightX, mouthY, curveOffset, faceSize)
         } else {
-            // Open mouth: filled region between upper and lower curves
-            drawOpenMouth(canvas, leftX, rightX, mouthY, curveOffset, halfWidth, faceSize, params)
+            drawOpenMouth(canvas, centerX, mouthY, halfWidth, faceSize, params)
         }
     }
 
     private fun drawClosedMouth(
         canvas: Canvas,
-        leftX: Float,
-        rightX: Float,
+        leftX: Float, rightX: Float,
         mouthY: Float,
         curveOffset: Float,
         faceSize: Float,
-        params: FaceParams,
     ) {
         mouthPath.moveTo(leftX, mouthY)
         mouthPath.quadTo(
@@ -79,51 +75,34 @@ class MouthRenderer {
             mouthY,
         )
 
-        strokePaint.color = params.color
-        strokePaint.strokeWidth = faceSize * 0.02f
-        strokePaint.setShadowLayer(faceSize * 0.04f, 0f, 0f, params.glowColor)
+        strokePaint.color = MOUTH_DARK_COLOR
+        strokePaint.strokeWidth = faceSize * 0.015f
+        strokePaint.setShadowLayer(0f, 0f, 0f, 0)
         canvas.drawPath(mouthPath, strokePaint)
     }
 
     private fun drawOpenMouth(
         canvas: Canvas,
-        leftX: Float,
-        rightX: Float,
+        centerX: Float,
         mouthY: Float,
-        curveOffset: Float,
         halfWidth: Float,
         faceSize: Float,
         params: FaceParams,
     ) {
-        val openHeight = faceSize * MAX_OPEN_HEIGHT * params.mouthOpen
-        val midX = (leftX + rightX) / 2f
+        val openH = faceSize * MAX_OPEN_HEIGHT * params.mouthOpen
+        val w = halfWidth.coerceAtLeast(faceSize * 0.03f)
 
-        // Upper lip curve
-        mouthPath.moveTo(leftX, mouthY)
-        mouthPath.quadTo(midX, mouthY + curveOffset, rightX, mouthY)
+        // Small dark rounded oval
+        mouthRect.set(
+            centerX - w,
+            mouthY - openH * 0.2f,
+            centerX + w,
+            mouthY + openH,
+        )
+        val cornerR = w * 0.8f
 
-        // Lower lip curve (closes the shape)
-        // The lower curve goes back from right to left, displaced downward
-        val lowerCurveY = mouthY + openHeight
-        val lowerControlY = lowerCurveY + curveOffset * 0.5f
-        mouthPath.quadTo(midX, lowerControlY, leftX, mouthY)
-
-        mouthPath.close()
-
-        // Fill the mouth area
-        fillPaint.color = adjustAlpha(params.color, 0.7f)
-        fillPaint.setShadowLayer(faceSize * 0.04f, 0f, 0f, params.glowColor)
-        canvas.drawPath(mouthPath, fillPaint)
-
-        // Stroke outline for definition
-        strokePaint.color = params.color
-        strokePaint.strokeWidth = faceSize * 0.015f
-        strokePaint.setShadowLayer(faceSize * 0.04f, 0f, 0f, params.glowColor)
-        canvas.drawPath(mouthPath, strokePaint)
-    }
-
-    private fun adjustAlpha(color: Int, factor: Float): Int {
-        val a = ((color shr 24) and 0xFF) * factor
-        return (a.toInt() shl 24) or (color and 0x00FFFFFF)
+        fillPaint.color = MOUTH_DARK_COLOR
+        fillPaint.setShadowLayer(0f, 0f, 0f, 0)
+        canvas.drawRoundRect(mouthRect, cornerR, cornerR, fillPaint)
     }
 }

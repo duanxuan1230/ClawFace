@@ -18,6 +18,13 @@ data class FaceParams(
     val mouthWidth: Float = 0.5f,
     val mouthOpen: Float = 0f,
     val mouthVisible: Boolean = true,
+    // Ghost body parameters
+    val cheekIntensity: Float = 0.6f,
+    val cheekColor: Int = 0xFFFF8FAA.toInt(),
+    val armLeftAngle: Float = 0f,
+    val armRightAngle: Float = 0f,
+    val bodySquish: Float = 0f,
+    val bodyWobble: Float = 0f,
 ) {
     companion object {
         fun lerp(from: FaceParams, to: FaceParams, t: Float): FaceParams {
@@ -36,6 +43,12 @@ data class FaceParams(
                 mouthWidth = lerp(from.mouthWidth, to.mouthWidth, f),
                 mouthOpen = lerp(from.mouthOpen, to.mouthOpen, f),
                 mouthVisible = if (f < 0.5f) from.mouthVisible else to.mouthVisible,
+                cheekIntensity = lerp(from.cheekIntensity, to.cheekIntensity, f),
+                cheekColor = lerpColor(from.cheekColor, to.cheekColor, f),
+                armLeftAngle = lerp(from.armLeftAngle, to.armLeftAngle, f),
+                armRightAngle = lerp(from.armRightAngle, to.armRightAngle, f),
+                bodySquish = lerp(from.bodySquish, to.bodySquish, f),
+                bodyWobble = lerp(from.bodyWobble, to.bodyWobble, f),
             )
         }
 

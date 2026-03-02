@@ -2,13 +2,13 @@ package com.openclaw.clawface.state
 
 /**
  * Predefined FaceParams for each of the 10 emotions.
- * Values are taken directly from the PRD appendix.
+ * Kawaii ghost style — soft pastels, rosy cheeks, expressive arms.
  */
 object EmotionPresets {
 
     private val presets = mapOf(
         Emotion.NEUTRAL to FaceParams(
-            color = 0xAABBCCDD.toInt(),
+            color = 0xBBCCDDEE.toInt(),
             glowColor = 0x88DDEEFF.toInt(),
             eyeScaleY = 1.0f,
             eyeTilt = 0f,
@@ -17,10 +17,15 @@ object EmotionPresets {
             mouthCurve = 0f,
             mouthWidth = 0.5f,
             mouthOpen = 0f,
+            cheekIntensity = 0.4f,
+            cheekColor = 0xFFFF8FAA.toInt(),
+            armLeftAngle = 0f,
+            armRightAngle = 0f,
+            bodyWobble = 0f,
         ),
         Emotion.JOY to FaceParams(
-            color = 0xAAFFDD33.toInt(),
-            glowColor = 0x88FFFFCC.toInt(),
+            color = 0xBBFFEE88.toInt(),
+            glowColor = 0x88FFFFF0.toInt(),
             eyeScaleY = 1.0f,
             eyeTilt = 0f,
             eyeSquint = 0f,
@@ -28,10 +33,15 @@ object EmotionPresets {
             mouthCurve = 1.0f,
             mouthWidth = 0.8f,
             mouthOpen = 0.5f,
+            cheekIntensity = 0.9f,
+            cheekColor = 0xFFFFAAAA.toInt(),
+            armLeftAngle = 10f,
+            armRightAngle = 15f,
+            bodyWobble = 0.3f,
         ),
         Emotion.ANXIETY to FaceParams(
-            color = 0xAAFF7700.toInt(),
-            glowColor = 0x88FFAA55.toInt(),
+            color = 0xBBFFAA66.toInt(),
+            glowColor = 0x88FFCC88.toInt(),
             eyeScaleY = 1.3f,
             eyeTilt = 0f,
             eyeSquint = 0f,
@@ -39,10 +49,15 @@ object EmotionPresets {
             mouthCurve = -0.2f,
             mouthWidth = 1.0f,
             mouthOpen = 0.1f,
+            cheekIntensity = 0.3f,
+            cheekColor = 0xFFFFBBCC.toInt(),
+            armLeftAngle = -5f,
+            armRightAngle = -5f,
+            bodyWobble = 0.5f,
         ),
         Emotion.ENVY to FaceParams(
-            color = 0xAA00CCCC.toInt(),
-            glowColor = 0x88AAFFFF.toInt(),
+            color = 0xBB66DDDD.toInt(),
+            glowColor = 0x88BBFFFF.toInt(),
             eyeScaleY = 1.4f,
             eyeTilt = 5f,
             eyeSquint = 0f,
@@ -50,10 +65,15 @@ object EmotionPresets {
             mouthCurve = 0.3f,
             mouthWidth = 0.3f,
             mouthOpen = 0.2f,
+            cheekIntensity = 0.2f,
+            cheekColor = 0xFFFF8FAA.toInt(),
+            armLeftAngle = 5f,
+            armRightAngle = -10f,
+            bodyWobble = 0.1f,
         ),
         Emotion.EMBARRASSMENT to FaceParams(
-            color = 0xAAFF6699.toInt(),
-            glowColor = 0x88FFBBDD.toInt(),
+            color = 0xBBFFAABB.toInt(),
+            glowColor = 0x88FFCCDD.toInt(),
             eyeScaleY = 0.8f,
             eyeTilt = -10f,
             eyeSquint = 0f,
@@ -61,10 +81,15 @@ object EmotionPresets {
             mouthCurve = -0.1f,
             mouthWidth = 0.2f,
             mouthOpen = 0f,
+            cheekIntensity = 1.0f,
+            cheekColor = 0xFFFF7799.toInt(),
+            armLeftAngle = -10f,
+            armRightAngle = -10f,
+            bodyWobble = 0f,
         ),
         Emotion.ENNUI to FaceParams(
-            color = 0xAA444499.toInt(),
-            glowColor = 0x887777AA.toInt(),
+            color = 0xBB8888BB.toInt(),
+            glowColor = 0x88AAAACC.toInt(),
             eyeScaleY = 0.4f,
             eyeTilt = 0f,
             eyeSquint = 0f,
@@ -72,10 +97,15 @@ object EmotionPresets {
             mouthCurve = 0f,
             mouthWidth = 0.5f,
             mouthOpen = 0f,
+            cheekIntensity = 0.1f,
+            cheekColor = 0xFFDDBBCC.toInt(),
+            armLeftAngle = -5f,
+            armRightAngle = -5f,
+            bodyWobble = 0f,
         ),
         Emotion.DISGUST to FaceParams(
-            color = 0xAA66CC33.toInt(),
-            glowColor = 0x88AAEE88.toInt(),
+            color = 0xBBAADD77.toInt(),
+            glowColor = 0x88CCEEAA.toInt(),
             eyeScaleY = 0.7f,
             eyeTilt = 5f,
             eyeSquint = 0.5f,
@@ -84,10 +114,15 @@ object EmotionPresets {
             mouthCurve = -0.8f,
             mouthWidth = 0.6f,
             mouthOpen = 0.2f,
+            cheekIntensity = 0f,
+            cheekColor = 0xFFCCDD99.toInt(),
+            armLeftAngle = 10f,
+            armRightAngle = -15f,
+            bodyWobble = 0.2f,
         ),
         Emotion.FEAR to FaceParams(
-            color = 0xAA9966CC.toInt(),
-            glowColor = 0x88CCAAEE.toInt(),
+            color = 0xBBBB99DD.toInt(),
+            glowColor = 0x88DDBBEE.toInt(),
             eyeScaleY = 1.2f,
             eyeTilt = 15f,
             eyeSquint = 0f,
@@ -95,10 +130,15 @@ object EmotionPresets {
             mouthCurve = -0.5f,
             mouthWidth = 0.4f,
             mouthOpen = 0.8f,
+            cheekIntensity = 0.5f,
+            cheekColor = 0xFFDDBBDD.toInt(),
+            armLeftAngle = -15f,
+            armRightAngle = -15f,
+            bodyWobble = 0.6f,
         ),
         Emotion.ANGER to FaceParams(
-            color = 0xAADD2222.toInt(),
-            glowColor = 0x88FF5555.toInt(),
+            color = 0xBBEE6666.toInt(),
+            glowColor = 0x88FF8888.toInt(),
             eyeScaleY = 0.8f,
             eyeTilt = 20f,
             eyeSquint = 0.7f,
@@ -107,10 +147,15 @@ object EmotionPresets {
             mouthCurve = -0.8f,
             mouthWidth = 0.9f,
             mouthOpen = 0.6f,
+            cheekIntensity = 0.7f,
+            cheekColor = 0xFFFF5555.toInt(),
+            armLeftAngle = 15f,
+            armRightAngle = 15f,
+            bodyWobble = 0.4f,
         ),
         Emotion.SADNESS to FaceParams(
-            color = 0xAA3366CC.toInt(),
-            glowColor = 0x8888AAEE.toInt(),
+            color = 0xBB7799DD.toInt(),
+            glowColor = 0x88AABBEE.toInt(),
             eyeScaleY = 0.9f,
             eyeTilt = -20f,
             eyeSquint = 0f,
@@ -118,6 +163,11 @@ object EmotionPresets {
             mouthCurve = -1.0f,
             mouthWidth = 0.6f,
             mouthOpen = 0.1f,
+            cheekIntensity = 0.3f,
+            cheekColor = 0xFFCCAADD.toInt(),
+            armLeftAngle = -10f,
+            armRightAngle = -10f,
+            bodyWobble = 0.1f,
         ),
     )
 
@@ -126,28 +176,37 @@ object EmotionPresets {
 
     /** Standby: no mouth, neutral eyes */
     val STANDBY = FaceParams(
-        color = 0xAABBCCDD.toInt(),
+        color = 0xBBCCDDEE.toInt(),
         glowColor = 0x88DDEEFF.toInt(),
         eyeScaleY = 1.0f,
         eyeTilt = 0f,
         mouthVisible = false,
+        cheekIntensity = 0.3f,
+        armLeftAngle = 0f,
+        armRightAngle = 0f,
     )
 
     /** Offline: grey, closed eyes */
     val OFFLINE = FaceParams(
-        color = 0xAA888888.toInt(),
-        glowColor = 0x88AAAAAA.toInt(),
+        color = 0xBBAAAABB.toInt(),
+        glowColor = 0x88BBBBCC.toInt(),
         eyeScaleY = 0.0f,
         eyeTilt = 0f,
         mouthVisible = false,
+        cheekIntensity = 0f,
+        armLeftAngle = -5f,
+        armRightAngle = -5f,
     )
 
     /** Thinking: half-closed eyes, no mouth */
     val THINKING = FaceParams(
-        color = 0xAABBCCDD.toInt(),
+        color = 0xBBCCDDEE.toInt(),
         glowColor = 0x88DDEEFF.toInt(),
         eyeScaleY = 0.5f,
         eyeTilt = 0f,
         mouthVisible = false,
+        cheekIntensity = 0.3f,
+        armLeftAngle = 0f,
+        armRightAngle = 5f,
     )
 }

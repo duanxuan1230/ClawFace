@@ -4,8 +4,8 @@ object AppConfig {
     // Rendering
     const val TARGET_FPS = 30
     const val STANDBY_FPS = 10
-    const val FACE_WIDTH_DP = 140f
-    const val FACE_HEIGHT_DP = 160f
+    const val FACE_WIDTH_DP = 150f
+    const val FACE_HEIGHT_DP = 170f
     const val GLASS_CORNER_RADIUS_RATIO = 0.16f  // corner radius as fraction of width
 
     // Animation
