@@ -1,12 +1,15 @@
 package com.openclaw.clawface.app
 
+import android.Manifest
 import android.animation.ValueAnimator
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
@@ -14,6 +17,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 import com.openclaw.clawface.R
@@ -85,6 +89,10 @@ class MainActivity : AppCompatActivity() {
         updatePermissionUI()
     }
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* granted or not, service can still run */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -135,6 +143,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupServiceButtons() {
         binding.btnStart.setOnClickListener {
             if (Settings.canDrawOverlays(this)) {
+                requestNotificationPermissionIfNeeded()
                 startForegroundService(Intent(this, OverlayService::class.java))
                 // Bind after a short delay to let service start
                 binding.root.postDelayed({ tryBindService() }, 300)
@@ -359,6 +368,15 @@ class MainActivity : AppCompatActivity() {
         binding.tvPermissionWarning.visibility = if (hasPermission) View.GONE else View.VISIBLE
         binding.btnGrantPermission.visibility = if (hasPermission) View.GONE else View.VISIBLE
         binding.btnStart.isEnabled = hasPermission
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     private fun requestOverlayPermission() {
