@@ -69,21 +69,25 @@ class EyeRenderer {
 
         if (ry < 0.5f) return
 
+        // Apply pupil/eye offset (used by Thinking jitter and per-emotion gaze direction)
+        val ecx = cx + params.pupilOffsetX * faceSize * 0.018f
+        val ecy = cy + params.pupilOffsetY * faceSize * 0.018f
+
         canvas.save()
 
         // Tilt rotation (mirrored for left eye)
         val tilt = if (isLeft) -params.eyeTilt else params.eyeTilt
-        canvas.rotate(tilt, cx, cy)
+        canvas.rotate(tilt, ecx, ecy)
 
         // Squint clipping
         if (params.eyeSquint > 0f && params.squintType != SquintType.NONE) {
-            applySquintClip(canvas, cx, cy, r, ry, params.eyeSquint, params.squintType)
+            applySquintClip(canvas, ecx, ecy, r, ry, params.eyeSquint, params.squintType)
         }
 
         // Ambient glow behind eye (emotion-colored soft halo)
         eyeGlowPaint.color = params.glowColor
         eyeGlowPaint.setShadowLayer(faceSize * 0.04f, 0f, 0f, params.glowColor)
-        eyeRect.set(cx - r, cy - ry, cx + r, cy + ry)
+        eyeRect.set(ecx - r, ecy - ry, ecx + r, ecy + ry)
         canvas.drawOval(eyeRect, eyeGlowPaint)
 
         // Solid dark eye fill
@@ -93,15 +97,15 @@ class EyeRenderer {
 
         // Large highlight (top-left, bright white)
         val hlR1 = r * HL_LARGE_RATIO
-        val hlX1 = cx + r * HL_LARGE_OFF_X
-        val hlY1 = cy + ry * HL_LARGE_OFF_Y
+        val hlX1 = ecx + r * HL_LARGE_OFF_X
+        val hlY1 = ecy + ry * HL_LARGE_OFF_Y
         highlightPaint.color = 0xEEFFFFFF.toInt()
         canvas.drawCircle(hlX1, hlY1, hlR1, highlightPaint)
 
         // Small highlight (bottom-right, dimmer)
         val hlR2 = r * HL_SMALL_RATIO
-        val hlX2 = cx + r * HL_SMALL_OFF_X
-        val hlY2 = cy + ry * HL_SMALL_OFF_Y
+        val hlX2 = ecx + r * HL_SMALL_OFF_X
+        val hlY2 = ecy + ry * HL_SMALL_OFF_Y
         highlightPaint.color = 0x99FFFFFF.toInt()
         canvas.drawCircle(hlX2, hlY2, hlR2, highlightPaint)
 

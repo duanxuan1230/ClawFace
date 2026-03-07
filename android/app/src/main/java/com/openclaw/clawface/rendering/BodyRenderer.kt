@@ -53,11 +53,7 @@ class BodyRenderer {
 
         canvas.restore()
 
-        // Layer 4: Thin border outline (outside clip so shadow is visible)
-        borderPaint.color = applyAlpha(0x44FFFFFF, alpha)
-        borderPaint.strokeWidth = viewW * 0.007f
-        borderPaint.setShadowLayer(viewW * 0.02f, 0f, 0f, applyAlpha(0x22FFFFFF, alpha))
-        canvas.drawPath(bodyPath, borderPaint)
+        // Layer 4: border removed — ghost body stands alone without frame
     }
 
     /**

@@ -88,11 +88,7 @@ class FaceView(context: Context) : View(context) {
             faceParams.color, faceParams.glowColor, offset.alpha,
         )
 
-        // 2. Background glass card (subtle, behind body)
-        glassCardRenderer.draw(
-            canvas, faceWidthPx, faceHeightPx, cornerRadius,
-            faceParams.color, offset.alpha,
-        )
+        // 2. Background glass card removed — no backing plate behind ghost body
 
         // 3. Ghost body (frosted glass clipped to ghost shape)
         bodyRenderer.draw(
