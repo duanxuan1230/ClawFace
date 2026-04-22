@@ -30,25 +30,7 @@ export interface UpdateFaceParams {
   color?: string;
 }
 
-/** Plugin config */
-export interface ClawFaceConfig {
-  /** Direct mode: send to this IP (for LAN testing) */
-  targetHost: string;
-  /** Direct mode: send to this port */
-  targetPort: number;
-  /** Server mode: listen on this port, auto-detect client from incoming packets */
-  listenPort: number;
-  /** "server" = listen + auto-detect client (for VPS), "direct" = send to targetHost:targetPort (for LAN) */
-  mode: 'server' | 'direct';
-  heartbeatIntervalMs: number;
-  enableHeartbeat: boolean;
+/** Anything with a send(data: string) method. */
+export interface Sender {
+  send(data: string): Promise<void>;
 }
-
-export const DEFAULT_CONFIG: ClawFaceConfig = {
-  targetHost: '127.0.0.1',
-  targetPort: 9527,
-  listenPort: 9527,
-  mode: 'server',
-  heartbeatIntervalMs: 30_000,
-  enableHeartbeat: true,
-};

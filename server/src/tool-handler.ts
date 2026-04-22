@@ -1,10 +1,5 @@
-import type { UpdateFaceParams } from './types.js';
+import type { UpdateFaceParams, Sender } from './types.js';
 import { emotionFrame, expressionFrame, modeFrame, colorFrame } from './frames.js';
-
-/** Anything with a send(data: string) method */
-export interface Sender {
-  send(data: string): Promise<void>;
-}
 
 /**
  * Handle the update_face tool invocation.

@@ -1,12 +1,4 @@
 import dgram from 'node:dgram';
-import fs from 'node:fs';
-import path from 'node:path';
-
-/** Default path for the client address file */
-const DEFAULT_CLIENT_FILE = path.join(
-  process.env.HOME || process.env.USERPROFILE || '/tmp',
-  '.clawface-client.json',
-);
 
 /**
  * Bidirectional UDP server.
@@ -27,38 +19,27 @@ export class UdpServer {
   private clientHost: string | null = null;
   private clientPort: number | null = null;
 
-  /** Path to write client address for cross-process sharing (hooks) */
-  private clientFilePath: string;
-
   /** Callback for incoming messages */
   onMessage: ((msg: string, rinfo: dgram.RemoteInfo) => void) | null = null;
 
-  constructor(listenPort: number, clientFilePath?: string) {
+  constructor(listenPort: number) {
     this.listenPort = listenPort;
-    this.clientFilePath = clientFilePath ?? DEFAULT_CLIENT_FILE;
   }
 
-  /**
-   * Start listening on the configured port.
-   * Returns a promise that resolves when the server is bound.
-   */
+  /** Start listening. Resolves when the server is bound. */
   start(): Promise<void> {
     return new Promise((resolve, reject) => {
       const socket = dgram.createSocket('udp4');
       this.socket = socket;
 
       socket.on('message', (msg, rinfo) => {
-        const isLoopback = rinfo.address === '127.0.0.1' || rinfo.address === '::1';
-
         // Only remember non-loopback addresses as the real client
+        const isLoopback = rinfo.address === '127.0.0.1' || rinfo.address === '::1';
         if (!isLoopback) {
           this.clientHost = rinfo.address;
           this.clientPort = rinfo.port;
-          this.writeClientFile();
         }
-
-        const message = msg.toString('utf-8');
-        this.onMessage?.(message, rinfo);
+        this.onMessage?.(msg.toString('utf-8'), rinfo);
       });
 
       socket.on('error', (err) => {
@@ -75,14 +56,9 @@ export class UdpServer {
     });
   }
 
-  /**
-   * Send data to the most recently seen client.
-   * If no client has connected yet, the send is silently dropped.
-   */
+  /** Send data to the most recently seen client. Silently drops if no client. */
   async send(data: string): Promise<void> {
-    if (!this.socket || !this.clientHost || !this.clientPort) {
-      return; // No client connected yet, silently drop
-    }
+    if (!this.socket || !this.clientHost || !this.clientPort) return;
     return new Promise((resolve, reject) => {
       const buf = Buffer.from(data, 'utf-8');
       this.socket!.send(buf, 0, buf.length, this.clientPort!, this.clientHost!, (err) => {
@@ -92,27 +68,12 @@ export class UdpServer {
     });
   }
 
-  /**
-   * Send data to a specific host:port (for direct mode / CLI testing).
-   */
-  async sendTo(data: string, host: string, port: number): Promise<void> {
-    const socket = this.socket ?? dgram.createSocket('udp4');
-    if (!this.socket) this.socket = socket;
-    return new Promise((resolve, reject) => {
-      const buf = Buffer.from(data, 'utf-8');
-      socket.send(buf, 0, buf.length, port, host, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-  }
-
-  /** Whether a client has been seen */
+  /** Whether a client has been seen. */
   hasClient(): boolean {
     return this.clientHost !== null;
   }
 
-  /** Get client info string */
+  /** Get client info string for display. */
   getClientInfo(): string {
     if (!this.clientHost) return 'no client';
     return `${this.clientHost}:${this.clientPort}`;
@@ -125,29 +86,5 @@ export class UdpServer {
     }
     this.clientHost = null;
     this.clientPort = null;
-    this.removeClientFile();
-  }
-
-  /** Write current client address to a JSON file for cross-process sharing */
-  private writeClientFile(): void {
-    try {
-      const data = JSON.stringify({
-        host: this.clientHost,
-        port: this.clientPort,
-        listenPort: this.listenPort,
-        ts: Date.now(),
-      });
-      fs.writeFileSync(this.clientFilePath, data, 'utf-8');
-    } catch { /* best-effort */ }
-  }
-
-  /** Remove client file on shutdown */
-  private removeClientFile(): void {
-    try { fs.unlinkSync(this.clientFilePath); } catch { /* ignore */ }
-  }
-
-  /** Get the client file path (for hooks to read) */
-  static getClientFilePath(): string {
-    return DEFAULT_CLIENT_FILE;
   }
 }

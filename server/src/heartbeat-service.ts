@@ -1,4 +1,4 @@
-import type { Sender } from './tool-handler.js';
+import type { Sender } from './types.js';
 import { heartbeatFrame } from './frames.js';
 
 /**

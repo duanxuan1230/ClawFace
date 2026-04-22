@@ -7,8 +7,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "src",
     "declaration": true
   },
-  "include": ["*.ts", "src/**/*.ts", "bin/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }
