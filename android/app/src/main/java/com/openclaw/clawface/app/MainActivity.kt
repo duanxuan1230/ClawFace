@@ -104,6 +104,7 @@ class MainActivity : AppCompatActivity() {
         setupEmotionButtons()
         setupModeButtons()
         setupSliders()
+        setupThemeButtons()
         setupNetworkButtons()
         updatePermissionUI()
     }
@@ -184,6 +185,29 @@ class MainActivity : AppCompatActivity() {
                 syncSlidersToEmotion(emotion)
                 applyEmotionTint(EmotionPresets.getPreset(emotion).color)
                 highlightButton(button, emotionButtons)
+            }
+        }
+    }
+
+    private lateinit var themeButtons: List<MaterialButton>
+
+    private fun setupThemeButtons() {
+        val themeMap = mapOf(
+            binding.btnThemePastel to "pastel",
+            binding.btnThemeMint to "mint",
+            binding.btnThemeSunset to "sunset",
+            binding.btnThemeLilac to "lilac",
+            binding.btnThemeSky to "sky",
+        )
+
+        themeButtons = themeMap.keys.toList()
+        // Default: pastel highlighted
+        highlightButton(binding.btnThemePastel, themeButtons)
+
+        themeMap.forEach { (button, theme) ->
+            button.setOnClickListener {
+                overlayService?.setTheme(theme)
+                highlightButton(button, themeButtons)
             }
         }
     }

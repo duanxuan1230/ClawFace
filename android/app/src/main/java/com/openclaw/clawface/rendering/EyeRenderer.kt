@@ -76,11 +76,16 @@ class EyeRenderer {
         val tilt = if (isLeft) -params.eyeTilt else params.eyeTilt
         canvas.rotate(tilt, ecx, ecy)
 
-        if (params.eyeSquint > 0f && params.squintType != SquintType.NONE) {
+        if (params.eyeSquint > 0f) {
             applySquintClip(canvas, ecx, ecy, r, ry, params.eyeSquint, params.squintType)
         }
 
         eyeRect.set(ecx - r, ecy - ry, ecx + r, ecy + ry)
+
+        // Clip all eye drawing to the oval bounds (prevents overflow during close animation)
+        clipPath.rewind()
+        clipPath.addOval(eyeRect, Path.Direction.CW)
+        canvas.clipPath(clipPath)
 
         // Ambient glow behind eye (emotion-colored soft halo)
         eyeGlowPaint.color = params.glowColor
@@ -127,7 +132,13 @@ class EyeRenderer {
                 val cutY = cy + ry - (ry * 2f * squintAmount * 0.5f)
                 clipPath.addRect(cx - margin, cy - ry - margin, cx + margin, cutY, Path.Direction.CW)
             }
-            SquintType.NONE -> return
+            SquintType.NONE -> {
+                // Symmetric squint: narrow from both top and bottom equally
+                val inset = ry * squintAmount * 0.55f
+                val topCut = cy - ry + inset
+                val botCut = cy + ry - inset
+                clipPath.addRect(cx - margin, topCut, cx + margin, botCut, Path.Direction.CW)
+            }
         }
         canvas.clipPath(clipPath)
     }
