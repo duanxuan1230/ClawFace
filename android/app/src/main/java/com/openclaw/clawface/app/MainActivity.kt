@@ -230,7 +230,7 @@ class MainActivity : AppCompatActivity() {
                     ConnectionManager.ConnectionState.DISCONNECTED -> "Disconnected"
                     ConnectionManager.ConnectionState.CONNECTING -> "Connecting..."
                     ConnectionManager.ConnectionState.CONNECTED -> "Connected"
-                    ConnectionManager.ConnectionState.OFFLINE -> "Offline (no heartbeat)"
+                    ConnectionManager.ConnectionState.OFFLINE -> "Reconnecting..."
                 }
                 binding.tvConnectionStatus.text = "Status: $statusText"
                 // Continue polling while connected/connecting

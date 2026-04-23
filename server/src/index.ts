@@ -2,73 +2,33 @@
 /**
  * ClawFace MCP Server
  *
- * Exposes the `update_face` and `get_status` tools via the Model Context Protocol.
- * Any MCP-compatible AI agent can use these to control the ClawFace Android desktop pet.
+ * Lightweight MCP proxy — all face control and status queries are forwarded
+ * to the persistent ClawFace daemon via HTTP.
+ *
+ * The daemon must be running separately (e.g., via PM2):
+ *   pm2 start dist/daemon.js --name clawface
  *
  * Configuration via environment variables:
- *   CLAWFACE_MODE=server|direct   (default: server)
- *   CLAWFACE_PORT=9527            (default: 9527)
- *   CLAWFACE_HOST=127.0.0.1      (default: 127.0.0.1, direct mode only)
- *   CLAWFACE_HEARTBEAT=true       (default: true)
- *   CLAWFACE_HEARTBEAT_INTERVAL=30000  (default: 30000ms)
+ *   CLAWFACE_PORT=9527  (must match the daemon's port)
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { loadConfig } from './config.js';
 import { UpdateFaceSchema } from './schemas.js';
-import { UdpSender } from './udp-sender.js';
-import { UdpServer } from './udp-server.js';
-import { handleUpdateFace } from './tool-handler.js';
-import { createHeartbeatService } from './heartbeat-service.js';
-import { heartbeatAckFrame } from './frames.js';
-import type { Sender } from './types.js';
 
-const config = loadConfig();
+const DAEMON_PORT = parseInt(process.env.CLAWFACE_PORT ?? '9527', 10);
+const DAEMON_URL = `http://127.0.0.1:${DAEMON_PORT}`;
 
-// --- Network layer ---
-
-let sender: Sender;
-let cleanup: () => void;
-
-if (config.mode === 'server') {
-  const server = new UdpServer(config.port);
-  server.onMessage = (msg) => {
-    try {
-      const frame = JSON.parse(msg);
-      if (frame.type === 'heartbeat') {
-        server.send(heartbeatAckFrame()).catch(() => {});
-      }
-    } catch { /* ignore parse errors */ }
-  };
-  await server.start();
-  console.error(`[ClawFace] Server mode — listening on UDP :${config.port}`);
-
-  sender = server;
-  cleanup = () => server.destroy();
-} else {
-  const direct = new UdpSender(config.host, config.port);
-  console.error(`[ClawFace] Direct mode — target ${config.host}:${config.port}`);
-
-  sender = direct;
-  cleanup = () => direct.destroy();
-}
-
-// --- Heartbeat ---
-
-const heartbeat = config.heartbeat
-  ? createHeartbeatService(sender, config.heartbeatIntervalMs)
-  : null;
-heartbeat?.start();
+console.error(`[ClawFace MCP] Forwarding to daemon at ${DAEMON_URL}`);
 
 // --- MCP Server ---
 
 const server = new McpServer({
   name: 'clawface',
-  version: '1.0.0',
+  version: '2.0.0',
 });
 
-// Tool: update_face
+// Tool: update_face (proxy to daemon HTTP API)
 server.tool(
   'update_face',
   `Control the ClawFace virtual face on the user's Android device.
@@ -96,31 +56,35 @@ Emotion reference:
   SADNESS — sad, melancholic, disappointed`,
   UpdateFaceSchema,
   async (params) => {
-    const result = await handleUpdateFace(params, sender);
-    return { content: [{ type: 'text', text: result }] };
+    try {
+      const res = await fetch(`${DAEMON_URL}/api/face`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      const data = await res.json() as { ok: boolean; result: string };
+      return { content: [{ type: 'text', text: data.result }] };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { content: [{ type: 'text', text: `Daemon unreachable: ${msg}` }] };
+    }
   },
 );
 
-// Tool: get_status
+// Tool: get_status (proxy to daemon HTTP API)
 server.tool(
   'get_status',
-  'Check the ClawFace connection status — whether an Android client is connected and the current network mode.',
+  'Check the ClawFace connection status — whether an Android client is connected.',
   {},
   async () => {
-    const mode = config.mode;
-    const connected = config.mode === 'server'
-      ? (sender as UdpServer).hasClient()
-      : true; // direct mode always "connected" (best-effort UDP)
-    const clientInfo = config.mode === 'server'
-      ? (sender as UdpServer).getClientInfo()
-      : `${config.host}:${config.port}`;
-
-    return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({ mode, connected, client: clientInfo }, null, 2),
-      }],
-    };
+    try {
+      const res = await fetch(`${DAEMON_URL}/api/status`);
+      const data = await res.json();
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { content: [{ type: 'text', text: `Daemon unreachable: ${msg}` }] };
+    }
   },
 );
 
@@ -160,17 +124,3 @@ Quick reference:
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-
-// --- Graceful shutdown ---
-
-process.on('SIGINT', () => {
-  heartbeat?.stop();
-  cleanup();
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  heartbeat?.stop();
-  cleanup();
-  process.exit(0);
-});

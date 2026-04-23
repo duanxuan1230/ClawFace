@@ -21,11 +21,8 @@ object AppConfig {
 
     // Network
     const val DEFAULT_PORT = 9527
-    const val HEARTBEAT_INTERVAL_MS = 30000L
-    const val HEARTBEAT_TIMEOUT_COUNT = 3
     const val RECONNECT_BASE_DELAY_MS = 1000L
     const val RECONNECT_MAX_DELAY_MS = 30000L
-    const val UDP_BUFFER_SIZE = 4096
 
     // Notification
     const val NOTIFICATION_CHANNEL_ID = "clawface_overlay"
