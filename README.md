@@ -1,8 +1,8 @@
 # ClawFace
 
-OpenClaw 的 Android 远程情感显示终端 —— 让 AI 拥有一张「脸」。
+Android 远程情感显示终端 —— 让 AI 拥有一张「脸」。
 
-ClawFace 以**悬浮窗桌宠**的形式存在于 Android 手机上，通过 UDP 协议接收 OpenClaw 服务端的情绪控制指令，实时呈现 AI 的情感状态。全部视觉元素由程序化矢量图形生成，零 Bitmap，轻量高效。
+ClawFace 以**悬浮窗桌宠**的形式存在于 Android 手机上，通过 WebSocket 接收服务端的情绪控制指令，实时呈现 AI 的情感状态。任何 MCP 兼容的 AI Agent 都可以通过 `update_face` 工具控制表情。全部视觉元素由程序化矢量图形生成，零 Bitmap，轻量高效。
 
 ![ClawFace 概念图](ClawFaceUI概念图.jpg)
 
@@ -13,11 +13,38 @@ ClawFace 以**悬浮窗桌宠**的形式存在于 Android 手机上，通过 UDP
 - **流畅动画系统** — Lerp 插值平滑过渡、眨眼系统（普通/慢速/双眨眼）、每种情绪专属动画（气球漂浮、高频震颤、融化等）
 - **4 种模式** — Active（激活）/ Standby（待机呼吸）/ Thinking（思考中）/ Offline（离线灰色闭眼+Zzz）
 - **毛玻璃 UI** — 悬浮窗和控制面板均采用 Glass Morphism 风格
-- **OpenClaw 插件** — LLM 通过 Function Calling 自主调用 `update_face` 工具控制表情
-- **双向 UDP 通信** — 支持 VPS 服务器模式（NAT 穿透）和局域网直连模式
-- **自动 Thinking 状态** — 收到消息立即切换 Thinking 动画，填充 LLM 响应前的空白期
+- **MCP Server** — 任何 MCP 兼容的 AI Agent 都可以通过 `update_face` 工具控制表情
+- **WebSocket 通信** — 持久连接，自动重连，运营商友好，无需 NAT 打洞
+- **常驻 Daemon** — 独立于 AI Agent 会话的持久进程，连接不受 Agent 重启影响
 - **记住连接信息** — Android 端自动保存上次输入的 IP 和端口
-- **零运行时依赖** — 服务端仅使用 `node:dgram`，无第三方依赖
+
+## 架构
+
+```
+┌──────────────────────┐     ┌──────────────────────┐
+│  AI Agent (Claude)   │     │  Android 手机          │
+│                      │     │                      │
+│  MCP Server          │     │  WsClient            │
+│  (per session,       │────▶│  (OkHttp WebSocket)  │
+│   HTTP proxy)        │     │                      │
+└──────────┬───────────┘     └──────────▲───────────┘
+           │ HTTP                       │ WebSocket
+           │ localhost:9527             │ ws://host:9527/ws
+           ▼                            │
+┌──────────────────────────────────────────────────┐
+│  ClawFace Daemon (PM2 常驻进程)                    │
+│                                                  │
+│  HTTP API (/api/face, /api/status)               │
+│  WebSocket Server (/ws)                          │
+│  端口: 9527                                       │
+└──────────────────────────────────────────────────┘
+```
+
+**为什么分离 Daemon 和 MCP Server？**
+
+MCP Server 的生命周期跟 AI Agent 会话绑定 —— 每次对话结束或重启 Agent，MCP Server 就会被回收。如果把 WebSocket 放在 MCP Server 里，手机每隔几分钟就会断连。
+
+Daemon 作为独立常驻进程（PM2 管理），WebSocket 连接不受 Agent 生命周期影响。MCP Server 只是一个轻量 HTTP 客户端，把 AI 的表情控制请求转发给 Daemon。
 
 ## 项目结构
 
@@ -25,35 +52,27 @@ ClawFace 以**悬浮窗桌宠**的形式存在于 Android 手机上，通过 UDP
 ClawFace/
 ├── android/                    # Android 客户端（Kotlin）
 │   └── app/src/main/java/com/openclaw/clawface/
-│       ├── app/                # Application + MainActivity
+│       ├── app/                # MainActivity（调试控制面板）
 │       ├── service/            # 悬浮窗前台 Service
 │       ├── view/               # FaceView 自定义绘制视图
-│       ├── rendering/          # 渲染器（Eye / Mouth / Glow / GlassCard）
-│       ├── animation/          # 动画循环 + 眨眼 + 情绪动画配置
-│       ├── state/              # 情绪状态机 + 预设数据
-│       ├── network/            # UDP 客户端 + 连接管理
-│       ├── protocol/           # 帧定义 + JSON 解析
-│       └── config/             # 常量配置
+│       ├── rendering/          # 渲染器（Eye / Mouth / Body / Cheek / Glow）
+│       ├── animation/          # 眨眼控制器 + 情绪动画配置
+│       ├── state/              # 情绪预设 + FaceParams + AnimationOffset
+│       ├── network/            # WsClient + ConnectionManager
+│       ├── protocol/           # Frame 定义 + FrameParser
+│       └── config/             # AppConfig 常量
 │
-├── server/                     # OpenClaw 插件（TypeScript）
-│   ├── index.ts                # 插件入口 register(api)
-│   ├── openclaw.plugin.json    # 插件清单
-│   ├── SKILL.md                # LLM Skill 定义
+├── server/                     # 服务端（TypeScript）
 │   ├── src/
-│   │   ├── types.ts            # 类型定义（Emotion / FaceMode / Config）
-│   │   ├── schema.ts           # update_face JSON Schema
-│   │   ├── prompt.ts           # LLM 提示词模板
-│   │   ├── frames.ts           # UDP 帧构建器（匹配 Android FrameParser）
-│   │   ├── udp-sender.ts       # 直连模式 UDP 发送器
-│   │   ├── udp-server.ts       # 服务器模式 UDP 双向通信
+│   │   ├── daemon.ts           # 常驻进程入口（HTTP + WebSocket 服务）
+│   │   ├── index.ts            # MCP Server 入口（HTTP 代理模式）
+│   │   ├── ws-server.ts        # WebSocket 服务，管理 Android 客户端连接
+│   │   ├── http-api.ts         # HTTP REST API（/api/face, /api/status）
 │   │   ├── tool-handler.ts     # update_face 工具处理逻辑
-│   │   ├── heartbeat-service.ts # 心跳后台服务
-│   │   ├── sender-ref.ts       # Sender 实例共享引用
-│   │   └── cli-commands.ts     # OpenClaw CLI 命令
-│   ├── hooks/
-│   │   └── auto-thinking/      # 自动 Thinking 状态 Hook
-│   │       ├── HOOK.md          # Hook 元数据
-│   │       └── handler.ts       # agent:bootstrap 事件处理器
+│   │   ├── frames.ts           # JSON 帧构建器（匹配 Android FrameParser）
+│   │   ├── types.ts            # 类型定义（Emotion / FaceMode / Sender）
+│   │   ├── schemas.ts          # Zod 参数校验
+│   │   └── config.ts           # 配置加载
 │   └── bin/
 │       └── clawface-cli.ts     # 独立 CLI 测试工具
 │
@@ -67,7 +86,7 @@ ClawFace/
 ### 前置条件
 
 - **Android 端**: Android 8.0+ (API 26)，需授权悬浮窗权限
-- **服务端**: Node.js 22+，OpenClaw 已安装
+- **服务端**: Node.js 22+
 
 ### 1. 构建 Android 客户端
 
@@ -79,100 +98,82 @@ cd android
 
 安装到手机后，打开 App → 授权悬浮窗权限 → 点击 Start ClawFace。
 
-### 2. 安装服务端插件
+### 2. 启动服务端
 
 ```bash
-# 进入服务端目录
 cd server
 npm install
+npm run build
 
-# 验证编译
-npx tsc --noEmit
+# 启动 Daemon（推荐用 PM2 守护）
+pm2 start dist/daemon.js --name clawface
+# 或直接前台运行
+npm start
 ```
 
-### 3. 独立 CLI 测试（不依赖 OpenClaw）
+启动后会看到：
+```
+[ClawFace] Daemon listening on :9527 (HTTP + WebSocket)
+[ClawFace]   Android: ws://<host>:9527/ws
+[ClawFace]   API:     http://127.0.0.1:9527/api/status
+```
 
-**直连模式**（手机与电脑在同一局域网）：
+### 3. 连接手机
+
+在 Android App 中输入服务器 IP 和端口（默认 9527），点击 Connect。状态变为 "Connected" 即成功。
+
+### 4. CLI 测试
+
+Daemon 运行后，可以用 CLI 工具发送命令（通过 HTTP API）：
 
 ```bash
 # 发送情绪
-npx tsx bin/clawface-cli.ts send-emotion JOY --host <手机IP> --port 9527
+npx tsx bin/clawface-cli.ts send-emotion JOY
 
-# 循环演示所有情绪
-npx tsx bin/clawface-cli.ts demo --host <手机IP>
+# 切换模式
+npx tsx bin/clawface-cli.ts send-mode THINKING
+
+# 发送颜色
+npx tsx bin/clawface-cli.ts send-color "#FF6B6B"
 
 # 发送表情参数
-npx tsx bin/clawface-cli.ts send-expression '{"mouthCurve":1.0,"eyeScaleY":1.2}' --host <手机IP>
+npx tsx bin/clawface-cli.ts send-expression '{"mouthCurve":1.0,"eyeScaleY":1.2}'
+
+# 循环演示所有情绪
+npx tsx bin/clawface-cli.ts demo
+
+# 查看连接状态
+npx tsx bin/clawface-cli.ts status
 ```
 
-**服务器模式**（手机主动连接到服务端）：
-
+远程服务器上的 Daemon：
 ```bash
-# 启动监听服务
-npx tsx bin/clawface-cli.ts serve --port 9527
-
-# 手机 App 中填入服务端 IP 并连接
-# 客户端连接后，在交互终端中输入命令：
-#   emotion JOY
-#   mode THINKING
-#   color #FF6B6B
-#   demo
+npx tsx bin/clawface-cli.ts status --host <server-ip> --port 9527
 ```
 
-### 4. 接入 OpenClaw
+### 5. 接入 AI Agent（MCP）
 
-**生产安装**（拷贝到插件目录）：
-
-```bash
-cd server
-openclaw plugins install .
-```
-
-**开发安装**（符号链接，推荐）：
-
-```bash
-cd server
-openclaw plugins install -l .
-```
-
-`-l` 模式创建符号链接而非拷贝，后续 `git pull` 更新代码后只需重启 OpenClaw 即可生效，无需重新安装插件。
-
-安装完成后，LLM 会自动在每次对话时调用 `update_face` 工具控制手机表情。
-
-**注册 auto-thinking Hook**（可选但推荐）：
-
-在 OpenClaw 配置文件（`~/.openclaw/openclaw.json`）中添加 hooks 扫描目录：
+在 AI Agent 的 MCP Server 配置中添加 ClawFace：
 
 ```json
 {
-  "hooks": {
-    "internal": {
-      "load": {
-        "extraDirs": ["/path/to/ClawFace/server/hooks"]
-      }
+  "clawface": {
+    "command": "node",
+    "args": ["/path/to/ClawFace/server/dist/index.js"],
+    "env": {
+      "CLAWFACE_PORT": "9527"
     }
   }
 }
 ```
 
-注册后，用户发送消息时手机会立即切换 Thinking 动画，填充 LLM 响应前的等待空白期。
-
-## 网络模式
-
-| 模式 | 场景 | 配置 |
-|------|------|------|
-| **server** | VPS 云端部署，手机通过公网连接 | `mode: "server"`, `listenPort: 9527` |
-| **direct** | 局域网内直连手机 | `mode: "direct"`, `targetHost: "<手机IP>"`, `targetPort: 9527` |
-
-**Server 模式工作原理**（NAT 穿透）：
-1. 手机发送心跳包到 VPS 的 UDP 9527 端口
-2. VPS 记住手机的源地址（IP + 端口）
-3. VPS 将情绪/表情帧发回该地址
-4. 手机通过心跳保持 NAT 映射存活
+配置后，AI Agent 会自动获得 `update_face` 和 `get_status` 两个工具。
 
 ## 通信协议
 
-所有通信基于 UDP，每个数据包为一个 JSON 帧：
+Android 客户端通过 WebSocket 连接到 `ws://host:9527/ws`。MCP Server 通过 HTTP 调用 `http://127.0.0.1:9527/api/*`。消息格式均为 JSON：
+
+### WebSocket 帧（Daemon ↔ Android）
 
 | 帧类型 | 方向 | 格式 | 说明 |
 |--------|------|------|------|
@@ -180,8 +181,40 @@ openclaw plugins install -l .
 | `expression` | Server→Client | `{"type":"expression","params":{"eyeScaleY":1.2}}` | 精细调参 |
 | `mode` | Server→Client | `{"type":"mode","mode":"THINKING"}` | 切换模式 |
 | `color` | Server→Client | `{"type":"color","color":"#FF6B6B"}` | 覆盖颜色 |
-| `heartbeat` | 双向 | `{"type":"heartbeat"}` | 心跳保活 |
+| `heartbeat` | 双向 | `{"type":"heartbeat"}` | 应用层心跳（可选，WebSocket 自带 ping/pong） |
 | `heartbeat_ack` | Server→Client | `{"type":"heartbeat_ack"}` | 心跳回复 |
+
+### HTTP API（MCP Server → Daemon）
+
+| 端点 | 方法 | 请求体 | 说明 |
+|------|------|--------|------|
+| `/api/face` | POST | `{"emotion":"JOY","mode":"ACTIVE","color":"#FF0000","expression":{...}}` | 更新表情（所有字段可选） |
+| `/api/status` | GET | — | 返回 `{"connected":true,"client":"1.2.3.4:5678"}` |
+
+## MCP 工具
+
+### update_face
+
+控制 Android 设备上的表情。所有参数可选，可组合使用：
+
+```json
+{
+  "emotion": "JOY",
+  "mode": "ACTIVE",
+  "color": "#FFDD33",
+  "expression": {
+    "eyeScaleY": 1.3,
+    "mouthCurve": 1.0,
+    "mouthOpen": 0.5
+  }
+}
+```
+
+处理顺序：emotion（设置预设）→ mode → color → expression（在预设基础上微调）。
+
+### get_status
+
+查询连接状态，返回 Android 客户端是否在线。
 
 ## 情绪一览
 
@@ -214,55 +247,53 @@ openclaw plugins install -l .
 | `mouthWidth` | 0.0 ~ 1.0 | 嘴巴宽度 |
 | `mouthOpen` | 0.0 ~ 1.0 | 嘴巴张开程度 |
 
-## VPS 部署
+## 部署
+
+### VPS 部署
 
 ```bash
-# 1. 在 VPS 上克隆项目
+# 1. 克隆项目
 git clone <repo-url> ~/ClawFace
 
-# 2. 安装插件（-l 链接模式，方便后续热更新）
+# 2. 构建服务端
 cd ~/ClawFace/server
-openclaw plugins install -l .
+npm install
+npm run build
 
-# 3. 注册 auto-thinking hook（编辑 ~/.openclaw/openclaw.json）
-#    添加: "hooks": { "internal": { "load": { "extraDirs": ["~/ClawFace/server/hooks"] } } }
+# 3. PM2 启动 Daemon
+pm2 start dist/daemon.js --name clawface
+pm2 save
 
-# 4. 开放防火墙 UDP 端口
-sudo ufw allow 9527/udp   # Ubuntu/Debian
-# 云厂商还需在安全组中放行 UDP 9527
-
-# 5. 重启 OpenClaw
-openclaw gateway restart
+# 4. 开放防火墙 TCP 端口（注意是 TCP，不是 UDP）
+sudo ufw allow 9527/tcp   # Ubuntu/Debian
+# 云厂商还需在安全组中放行 TCP 9527
 ```
 
-**后续更新**（无需重新安装插件）：
+### 更新
 
 ```bash
 cd ~/ClawFace && git pull
-openclaw gateway restart
+cd server && npm run build
+pm2 restart clawface
 ```
 
-> 因为使用了 `-l` 链接模式安装，`git pull` 后重启即可生效。
+### 环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `CLAWFACE_PORT` | `9527` | Daemon 监听端口（HTTP + WebSocket） |
 
 ## 技术栈
 
 | 组件 | 技术 |
 |------|------|
-| Android 客户端 | Kotlin, Android Canvas, Coroutines, ViewBinding |
-| 服务端插件 | TypeScript, node:dgram (零运行时依赖) |
-| 通信协议 | UDP + JSON |
+| Android 客户端 | Kotlin, OkHttp WebSocket, Android Canvas, Coroutines, ViewBinding |
+| 服务端 Daemon | TypeScript, ws (WebSocket), Node.js http |
+| MCP Server | TypeScript, @modelcontextprotocol/sdk |
+| 通信协议 | WebSocket + JSON |
 | 渲染 | 纯程序化矢量（Path/Paint/ShadowLayer） |
 | 动画 | Choreographer + 程序化噪音函数 |
-| AI 集成 | OpenClaw Plugin API (registerTool / registerService) + Hook |
-
-## 开发状态
-
-- [x] Phase 0: 基础骨架 — 悬浮窗 + Neutral 渲染
-- [x] Phase 1: 表情系统 — 10 种情绪预设 + Lerp 过渡 + Debug 面板
-- [x] Phase 2: 动画系统 — 眨眼 + 程序化噪音动画 + 拖拽
-- [x] Phase 3: 网络通信 — UDP + 心跳 + 断线重连
-- [x] Phase 4: 服务端插件 — OpenClaw 集成 + 双向 UDP
-- [x] Phase 5: 体验优化 — 自动 Thinking 状态 + IP 记忆 + 连接验证
+| 进程管理 | PM2 |
 
 ## 许可证
 
