@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.util.Log
 import com.openclaw.clawface.state.Emotion
 import com.openclaw.clawface.state.FaceMode
+import com.openclaw.clawface.state.GhostTheme
 import org.json.JSONObject
 
 /**
@@ -23,6 +24,7 @@ object FrameParser {
                 "expression" -> parseExpression(obj)
                 "mode" -> parseMode(obj)
                 "color" -> parseColor(obj)
+                "theme" -> parseTheme(obj)
                 "heartbeat" -> Frame.Heartbeat
                 "heartbeat_ack" -> Frame.HeartbeatAck
                 else -> {
@@ -68,6 +70,16 @@ object FrameParser {
             return Frame.Unknown
         }
         return Frame.ModeFrame(mode)
+    }
+
+    private fun parseTheme(obj: JSONObject): Frame {
+        val name = obj.optString("theme", "").lowercase()
+        return if (name in GhostTheme.ALL_NAMES) {
+            Frame.ThemeFrame(name)
+        } else {
+            Log.w(TAG, "Unknown theme: $name")
+            Frame.Unknown
+        }
     }
 
     private fun parseColor(obj: JSONObject): Frame {

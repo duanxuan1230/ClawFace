@@ -43,6 +43,13 @@ Guidelines:
 - Default to "NEUTRAL" if no specific emotion fits.
 - Match your TRUE intent, not surface words — detect sarcasm and irony.
 
+Theme reference (optional, changes ghost body colors):
+  pastel — soft pink & blue (default)
+  mint — fresh green & cyan
+  sunset — warm orange & pink
+  lilac — purple & lavender
+  sky — blue & light blue
+
 Emotion reference:
   NEUTRAL — calm, default state
   JOY — happy, amused, delighted

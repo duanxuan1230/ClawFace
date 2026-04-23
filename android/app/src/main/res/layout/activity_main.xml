@@ -1,11 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_dark"
-    android:fillViewport="true">
+    android:background="@color/background_light">
+
+    <!-- Background decoration: pink blob top-left -->
+    <View
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:background="@drawable/bg_blob_pink"
+        android:layout_gravity="start|top"
+        android:translationX="-80dp"
+        android:translationY="-40dp"
+        android:alpha="0.6" />
+
+    <!-- Background decoration: blue blob bottom-right -->
+    <View
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:background="@drawable/bg_blob_blue"
+        android:layout_gravity="end|bottom"
+        android:translationX="80dp"
+        android:translationY="40dp"
+        android:alpha="0.6" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -52,7 +76,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="28dp"
             app:cardElevation="2dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="@android:color/transparent"
@@ -92,7 +116,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="28dp"
             app:cardElevation="2dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="@android:color/transparent"
@@ -233,7 +257,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="28dp"
             app:cardElevation="2dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="@android:color/transparent"
@@ -302,7 +326,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="28dp"
             app:cardElevation="2dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="@android:color/transparent"
@@ -404,7 +428,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            app:cardCornerRadius="20dp"
+            app:cardCornerRadius="28dp"
             app:cardElevation="2dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="@android:color/transparent"
@@ -442,3 +466,4 @@
 
     </LinearLayout>
 </ScrollView>
+</FrameLayout>

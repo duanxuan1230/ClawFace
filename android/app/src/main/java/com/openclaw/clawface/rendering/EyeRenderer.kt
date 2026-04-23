@@ -1,16 +1,16 @@
 package com.openclaw.clawface.rendering
 
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.RectF
+import android.graphics.*
 import com.openclaw.clawface.state.FaceParams
 import com.openclaw.clawface.state.SquintType
 
 /**
- * Kawaii dot-eye renderer.
- * Eyes are solid dark circles with dual white highlight dots,
- * giving the classic cute ghost look from the concept image.
+ * Kawaii dot-eye renderer — radial gradient fill with single white highlight.
+ *
+ * Matches the design mockup:
+ *  - Dark radial gradient (#3a3550 → #0a0815) instead of flat solid
+ *  - Single bright highlight dot (top-right, following pupil offset)
+ *  - Squint clipping and tilt mechanics preserved
  */
 class EyeRenderer {
 
@@ -19,28 +19,27 @@ class EyeRenderer {
     }
     private val eyePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = 0xFF111122.toInt()
     }
     private val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
+        color = 0xF5FFFFFF.toInt()  // 96% white
     }
     private val clipPath = Path()
     private val eyeRect = RectF()
 
     companion object {
-        private const val BASE_EYE_RADIUS = 0.10f     // circle radius (unified X/Y)
-        private const val EYE_SPACING = 0.30f           // closer together for cute look
-        private const val EYE_Y_OFFSET = -0.06f         // above center
+        private const val BASE_EYE_RADIUS = 0.10f
+        private const val EYE_SPACING = 0.30f
+        private const val EYE_Y_OFFSET = -0.06f
 
-        // Large highlight: top-left
-        private const val HL_LARGE_RATIO = 0.30f
-        private const val HL_LARGE_OFF_X = -0.25f
-        private const val HL_LARGE_OFF_Y = -0.25f
+        // Single highlight: slightly right of center, above midline
+        private const val HL_RATIO = 0.22f
+        private const val HL_OFF_X = 0.20f
+        private const val HL_OFF_Y = -0.30f
 
-        // Small highlight: bottom-right
-        private const val HL_SMALL_RATIO = 0.12f
-        private const val HL_SMALL_OFF_X = 0.20f
-        private const val HL_SMALL_OFF_Y = 0.25f
+        // Eye gradient colors (from design mockup)
+        private val EYE_CENTER = 0xFF3A3550.toInt()
+        private val EYE_EDGE = 0xFF0A0815.toInt()
     }
 
     fun draw(
@@ -65,49 +64,47 @@ class EyeRenderer {
         isLeft: Boolean,
     ) {
         val r = faceSize * BASE_EYE_RADIUS
-        val ry = r * params.eyeScaleY  // vertical scale for blink
+        val ry = r * params.eyeScaleY
 
         if (ry < 0.5f) return
 
-        // Apply pupil/eye offset (used by Thinking jitter and per-emotion gaze direction)
         val ecx = cx + params.pupilOffsetX * faceSize * 0.018f
         val ecy = cy + params.pupilOffsetY * faceSize * 0.018f
 
         canvas.save()
 
-        // Tilt rotation (mirrored for left eye)
         val tilt = if (isLeft) -params.eyeTilt else params.eyeTilt
         canvas.rotate(tilt, ecx, ecy)
 
-        // Squint clipping
         if (params.eyeSquint > 0f && params.squintType != SquintType.NONE) {
             applySquintClip(canvas, ecx, ecy, r, ry, params.eyeSquint, params.squintType)
         }
 
+        eyeRect.set(ecx - r, ecy - ry, ecx + r, ecy + ry)
+
         // Ambient glow behind eye (emotion-colored soft halo)
         eyeGlowPaint.color = params.glowColor
         eyeGlowPaint.setShadowLayer(faceSize * 0.04f, 0f, 0f, params.glowColor)
-        eyeRect.set(ecx - r, ecy - ry, ecx + r, ecy + ry)
         canvas.drawOval(eyeRect, eyeGlowPaint)
 
-        // Solid dark eye fill
-        eyePaint.color = 0xFF111122.toInt()
+        // Dark radial gradient fill (matching design: cx=35%, cy=30%, r=70%)
+        val gradCx = ecx - r * 0.15f   // offset gradient center to upper-left
+        val gradCy = ecy - ry * 0.20f
+        val gradR = r * 1.4f
+        eyePaint.shader = RadialGradient(
+            gradCx, gradCy, gradR,
+            EYE_CENTER, EYE_EDGE,
+            Shader.TileMode.CLAMP,
+        )
         eyePaint.setShadowLayer(0f, 0f, 0f, 0)
         canvas.drawOval(eyeRect, eyePaint)
 
-        // Large highlight (top-left, bright white)
-        val hlR1 = r * HL_LARGE_RATIO
-        val hlX1 = ecx + r * HL_LARGE_OFF_X
-        val hlY1 = ecy + ry * HL_LARGE_OFF_Y
-        highlightPaint.color = 0xEEFFFFFF.toInt()
-        canvas.drawCircle(hlX1, hlY1, hlR1, highlightPaint)
-
-        // Small highlight (bottom-right, dimmer)
-        val hlR2 = r * HL_SMALL_RATIO
-        val hlX2 = ecx + r * HL_SMALL_OFF_X
-        val hlY2 = ecy + ry * HL_SMALL_OFF_Y
-        highlightPaint.color = 0x99FFFFFF.toInt()
-        canvas.drawCircle(hlX2, hlY2, hlR2, highlightPaint)
+        // Single white highlight (follows pupil offset)
+        val pupilOx = params.pupilOffsetX * r * 0.25f
+        val hlR = r * HL_RATIO
+        val hlX = ecx + r * HL_OFF_X + pupilOx
+        val hlY = ecy + ry * HL_OFF_Y
+        canvas.drawCircle(hlX, hlY, hlR, highlightPaint)
 
         canvas.restore()
     }

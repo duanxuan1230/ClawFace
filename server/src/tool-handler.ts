@@ -1,5 +1,5 @@
 import type { UpdateFaceParams, Sender } from './types.js';
-import { emotionFrame, expressionFrame, modeFrame, colorFrame } from './frames.js';
+import { emotionFrame, expressionFrame, modeFrame, colorFrame, themeFrame } from './frames.js';
 
 /**
  * Handle the update_face tool invocation.
@@ -30,7 +30,13 @@ export async function handleUpdateFace(
     results.push(`color=${params.color}`);
   }
 
-  // 4. Expression overrides last — fine-tuning on top of emotion preset
+  // 4. Theme
+  if (params.theme) {
+    await sender.send(themeFrame(params.theme));
+    results.push(`theme=${params.theme}`);
+  }
+
+  // 5. Expression overrides last — fine-tuning on top of emotion preset
   if (params.expression) {
     const exprParams: Record<string, number> = {};
     for (const [key, value] of Object.entries(params.expression)) {

@@ -25,6 +25,8 @@ data class FaceParams(
     val armRightAngle: Float = 0f,
     val bodySquish: Float = 0f,
     val bodyWobble: Float = 0f,
+    // Ghost color theme (pastel/mint/sunset/lilac/sky)
+    val theme: String = "pastel",
 ) {
     companion object {
         fun lerp(from: FaceParams, to: FaceParams, t: Float): FaceParams {
@@ -49,6 +51,7 @@ data class FaceParams(
                 armRightAngle = lerp(from.armRightAngle, to.armRightAngle, f),
                 bodySquish = lerp(from.bodySquish, to.bodySquish, f),
                 bodyWobble = lerp(from.bodyWobble, to.bodyWobble, f),
+                theme = if (f < 0.5f) from.theme else to.theme,
             )
         }
 

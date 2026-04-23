@@ -9,6 +9,10 @@ export type Emotion = (typeof EMOTIONS)[number];
 export const FACE_MODES = ['ACTIVE', 'STANDBY', 'THINKING', 'OFFLINE'] as const;
 export type FaceMode = (typeof FACE_MODES)[number];
 
+/** Must match android GhostTheme.kt theme names */
+export const GHOST_THEMES = ['pastel', 'mint', 'sunset', 'lilac', 'sky'] as const;
+export type GhostThemeName = (typeof GHOST_THEMES)[number];
+
 /** Expression params — keys must match FrameParser.parseExpression() */
 export interface ExpressionParams {
   eyeScaleY?: number;
@@ -28,6 +32,7 @@ export interface UpdateFaceParams {
   expression?: ExpressionParams;
   mode?: FaceMode;
   color?: string;
+  theme?: GhostThemeName;
 }
 
 /** Anything with a send(data: string) method. */

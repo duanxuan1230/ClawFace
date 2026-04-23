@@ -308,6 +308,10 @@ class OverlayService : Service() {
         targetParams = targetParams.copy(color = color)
     }
 
+    fun setTheme(theme: String) {
+        targetParams = targetParams.copy(theme = theme)
+    }
+
     fun overrideParams(params: FaceParams) {
         targetParams = params
     }
@@ -345,6 +349,7 @@ class OverlayService : Service() {
             is Frame.ExpressionFrame -> applyExpressionParams(frame.params)
             is Frame.ModeFrame -> setMode(frame.mode)
             is Frame.ColorFrame -> setCustomColor(frame.color)
+            is Frame.ThemeFrame -> setTheme(frame.theme)
             else -> { /* heartbeat/ack/unknown handled by ConnectionManager */ }
         }
     }

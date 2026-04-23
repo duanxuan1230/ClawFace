@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EMOTIONS, FACE_MODES } from './types.js';
+import { EMOTIONS, FACE_MODES, GHOST_THEMES } from './types.js';
 
 /** Zod schema for the update_face tool parameters. */
 export const UpdateFaceSchema = {
@@ -33,4 +33,9 @@ export const UpdateFaceSchema = {
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .optional()
     .describe('Override face color with hex code, e.g. "#FFDD33".'),
+
+  theme: z
+    .enum(GHOST_THEMES)
+    .optional()
+    .describe('Set the ghost body color theme: pastel (pink-blue), mint (green), sunset (orange-pink), lilac (purple), sky (blue).'),
 };
