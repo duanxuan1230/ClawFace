@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Ghost silhouette (monochrome for notification) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2
+            C 16.5,2 20,6 20,11
+            L 20,18
+            C 20,19.2 18.8,19.8 18,19
+            L 16.5,17.5
+            C 16,17 15.2,17 14.7,17.5
+            L 13.2,19
+            C 12.8,19.4 12.2,19.4 11.8,19
+            L 10.3,17.5
+            C 9.8,17 9,17 8.5,17.5
+            L 7,19
+            C 6,19.8 4.5,19.2 4.5,18
+            L 4.5,11
+            C 4.5,6 8,2 12,2 Z" />
+
+    <!-- Left eye -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M9,10m-1.2,0a1.2,1.5 0,1,1 2.4,0a1.2,1.5 0,1,1 -2.4,0" />
+
+    <!-- Right eye -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M15,10m-1.2,0a1.2,1.5 0,1,1 2.4,0a1.2,1.5 0,1,1 -2.4,0" />
+</vector>
