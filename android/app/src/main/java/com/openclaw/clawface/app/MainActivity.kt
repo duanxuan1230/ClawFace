@@ -104,6 +104,7 @@ class MainActivity : AppCompatActivity() {
         setupEmotionButtons()
         setupModeButtons()
         setupSliders()
+        setupThemeButtons()
         setupNetworkButtons()
         updatePermissionUI()
     }
@@ -188,6 +189,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private lateinit var themeButtons: List<MaterialButton>
+
+    private fun setupThemeButtons() {
+        val themeMap = mapOf(
+            binding.btnThemePastel to "pastel",
+            binding.btnThemeMint to "mint",
+            binding.btnThemeSunset to "sunset",
+            binding.btnThemeLilac to "lilac",
+            binding.btnThemeSky to "sky",
+        )
+
+        themeButtons = themeMap.keys.toList()
+        // Default: pastel highlighted
+        highlightButton(binding.btnThemePastel, themeButtons)
+
+        themeMap.forEach { (button, theme) ->
+            button.setOnClickListener {
+                overlayService?.setTheme(theme)
+                highlightButton(button, themeButtons)
+            }
+        }
+    }
+
     private fun setupNetworkButtons() {
         // Restore last used host/port
         val prefs = getSharedPreferences("clawface_prefs", MODE_PRIVATE)
@@ -230,7 +254,7 @@ class MainActivity : AppCompatActivity() {
                     ConnectionManager.ConnectionState.DISCONNECTED -> "Disconnected"
                     ConnectionManager.ConnectionState.CONNECTING -> "Connecting..."
                     ConnectionManager.ConnectionState.CONNECTED -> "Connected"
-                    ConnectionManager.ConnectionState.OFFLINE -> "Offline (no heartbeat)"
+                    ConnectionManager.ConnectionState.OFFLINE -> "Reconnecting..."
                 }
                 binding.tvConnectionStatus.text = "Status: $statusText"
                 // Continue polling while connected/connecting

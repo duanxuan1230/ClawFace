@@ -19,6 +19,10 @@ export function colorFrame(color: string): string {
   return JSON.stringify({ type: 'color', color });
 }
 
+export function themeFrame(theme: string): string {
+  return JSON.stringify({ type: 'theme', theme: theme.toLowerCase() });
+}
+
 export function heartbeatFrame(): string {
   return JSON.stringify({ type: 'heartbeat' });
 }

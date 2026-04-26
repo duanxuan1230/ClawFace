@@ -4,22 +4,86 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Background circle -->
+
+    <!-- Pastel gradient background -->
     <path
-        android:fillColor="#1A1A2E"
-        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0" />
-    <!-- Left eye -->
+        android:pathData="M0,0h108v108H0z"
+        android:fillColor="#FFC8DC"/>
     <path
-        android:fillColor="#6C63FF"
-        android:pathData="M40,46m-6,0a6,7 0,1 1,12 0a6,7 0,1 1,-12 0" />
-    <!-- Right eye -->
+        android:pathData="M0,0h108v108H0z"
+        android:fillColor="#20C8D4FF"/>
+
+    <!-- Ghost body (white semi-transparent, dome top + scalloped bottom) -->
     <path
-        android:fillColor="#6C63FF"
-        android:pathData="M68,46m-6,0a6,7 0,1 1,12 0a6,7 0,1 1,-12 0" />
-    <!-- Mouth -->
+        android:fillColor="#E6FFFFFF"
+        android:pathData="M54,18
+            C 72,18 84,32 84,50
+            L 84,72
+            C 84,77 80,79 77,76
+            L 73,73
+            C 71,72 68,72 66,73
+            L 62,76
+            C 60,77 58,77 56,76
+            L 52,73
+            C 50,72 47,72 45,73
+            L 41,76
+            C 38,79 32,77 32,72
+            L 32,50
+            C 32,32 44,18 54,18 Z" />
+
+    <!-- Subtle body tint (pink lower-left) -->
     <path
-        android:strokeColor="#6C63FF"
+        android:fillColor="#30FFC8D8"
+        android:pathData="M54,18
+            C 72,18 84,32 84,50
+            L 84,72
+            C 84,77 80,79 77,76
+            L 73,73
+            C 71,72 68,72 66,73
+            L 62,76
+            C 60,77 58,77 56,76
+            L 52,73
+            C 50,72 47,72 45,73
+            L 41,76
+            C 38,79 32,77 32,72
+            L 32,50
+            C 32,32 44,18 54,18 Z" />
+
+    <!-- Left cheek blush -->
+    <path
+        android:fillColor="#40FF9AB3"
+        android:pathData="M40,56m-6,0a6,4 0,1,1 12,0a6,4 0,1,1 -12,0"/>
+
+    <!-- Right cheek blush -->
+    <path
+        android:fillColor="#40FF9AB3"
+        android:pathData="M68,56m-6,0a6,4 0,1,1 12,0a6,4 0,1,1 -12,0"/>
+
+    <!-- Left eye (dark gradient-like) -->
+    <path
+        android:fillColor="#FF2A2540"
+        android:pathData="M44,47m-4,0a4,5 0,1,1 8,0a4,5 0,1,1 -8,0"/>
+
+    <!-- Left eye highlight -->
+    <path
+        android:fillColor="#F0FFFFFF"
+        android:pathData="M45.5,44.5m-1.2,0a1.2,1.2 0,1,1 2.4,0a1.2,1.2 0,1,1 -2.4,0"/>
+
+    <!-- Right eye (dark gradient-like) -->
+    <path
+        android:fillColor="#FF2A2540"
+        android:pathData="M64,47m-4,0a4,5 0,1,1 8,0a4,5 0,1,1 -8,0"/>
+
+    <!-- Right eye highlight -->
+    <path
+        android:fillColor="#F0FFFFFF"
+        android:pathData="M65.5,44.5m-1.2,0a1.2,1.2 0,1,1 2.4,0a1.2,1.2 0,1,1 -2.4,0"/>
+
+    <!-- Smile (vibrant red curve) -->
+    <path
+        android:strokeColor="#FFFF3D60"
         android:strokeWidth="2.5"
         android:fillColor="#00000000"
-        android:pathData="M38,62 Q54,72 70,62" />
+        android:pathData="M46,60 Q54,68 62,60"
+        android:strokeLineCap="round"/>
 </vector>

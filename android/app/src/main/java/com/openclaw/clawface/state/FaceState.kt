@@ -25,6 +25,8 @@ data class FaceParams(
     val armRightAngle: Float = 0f,
     val bodySquish: Float = 0f,
     val bodyWobble: Float = 0f,
+    // Ghost color theme (pastel/mint/sunset/lilac/sky)
+    val theme: String = "pastel",
 ) {
     companion object {
         fun lerp(from: FaceParams, to: FaceParams, t: Float): FaceParams {
@@ -35,20 +37,21 @@ data class FaceParams(
                 eyeScaleY = lerp(from.eyeScaleY, to.eyeScaleY, f),
                 eyeTilt = lerp(from.eyeTilt, to.eyeTilt, f),
                 eyeSquint = lerp(from.eyeSquint, to.eyeSquint, f),
-                squintType = if (f < 0.5f) from.squintType else to.squintType,
+                squintType = to.squintType,
                 pupilOffsetX = lerp(from.pupilOffsetX, to.pupilOffsetX, f),
                 pupilOffsetY = lerp(from.pupilOffsetY, to.pupilOffsetY, f),
                 pupilScale = lerp(from.pupilScale, to.pupilScale, f),
                 mouthCurve = lerp(from.mouthCurve, to.mouthCurve, f),
                 mouthWidth = lerp(from.mouthWidth, to.mouthWidth, f),
                 mouthOpen = lerp(from.mouthOpen, to.mouthOpen, f),
-                mouthVisible = if (f < 0.5f) from.mouthVisible else to.mouthVisible,
+                mouthVisible = to.mouthVisible,
                 cheekIntensity = lerp(from.cheekIntensity, to.cheekIntensity, f),
                 cheekColor = lerpColor(from.cheekColor, to.cheekColor, f),
                 armLeftAngle = lerp(from.armLeftAngle, to.armLeftAngle, f),
                 armRightAngle = lerp(from.armRightAngle, to.armRightAngle, f),
                 bodySquish = lerp(from.bodySquish, to.bodySquish, f),
                 bodyWobble = lerp(from.bodyWobble, to.bodyWobble, f),
+                theme = to.theme,
             )
         }
 

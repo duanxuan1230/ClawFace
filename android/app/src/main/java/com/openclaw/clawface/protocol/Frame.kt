@@ -12,6 +12,7 @@ sealed class Frame {
     data class ExpressionFrame(val params: Map<String, Float>) : Frame()
     data class ModeFrame(val mode: FaceMode) : Frame()
     data class ColorFrame(val color: Int) : Frame()
+    data class ThemeFrame(val theme: String) : Frame()
     object Heartbeat : Frame()
     object HeartbeatAck : Frame()
     object Unknown : Frame()

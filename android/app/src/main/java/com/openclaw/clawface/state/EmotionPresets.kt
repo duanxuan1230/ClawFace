@@ -9,6 +9,7 @@ object EmotionPresets {
     private val presets = mapOf(
         // Calm and collected, subtle hint of warmth
         Emotion.NEUTRAL to FaceParams(
+            theme = "pastel",
             color = 0xBBCCDDEE.toInt(),
             glowColor = 0x88DDEEFF.toInt(),
             eyeScaleY = 1.0f,
@@ -26,6 +27,7 @@ object EmotionPresets {
         ),
         // Exuberant happiness — big eyes, huge grin, arms raised
         Emotion.JOY to FaceParams(
+            theme = "sunny",
             color = 0xBBFFEE55.toInt(),
             glowColor = 0x88FFFF88.toInt(),
             eyeScaleY = 1.3f,
@@ -44,6 +46,7 @@ object EmotionPresets {
         ),
         // Nervous dread — wide alarmed eyes, shaky body
         Emotion.ANXIETY to FaceParams(
+            theme = "amber",
             color = 0xBBFFAA55.toInt(),
             glowColor = 0x88FFCC77.toInt(),
             eyeScaleY = 1.45f,
@@ -61,6 +64,7 @@ object EmotionPresets {
         ),
         // Cold covetous stare — narrowed calculating gaze, thin pursed mouth
         Emotion.ENVY to FaceParams(
+            theme = "teal",
             color = 0xBB44CCCC.toInt(),
             glowColor = 0x8888EEEE.toInt(),
             eyeScaleY = 0.65f,
@@ -79,6 +83,7 @@ object EmotionPresets {
         ),
         // Frozen red-faced embarrassment — averted gaze, cherry blush
         Emotion.EMBARRASSMENT to FaceParams(
+            theme = "rose",
             color = 0xBBFFAABB.toInt(),
             glowColor = 0x88FFCCDD.toInt(),
             eyeScaleY = 0.7f,
@@ -99,6 +104,7 @@ object EmotionPresets {
         ),
         // Dead inside — barely-open slitted eyes, slack jaw, limp arms
         Emotion.ENNUI to FaceParams(
+            theme = "ash",
             color = 0xBB8888BB.toInt(),
             glowColor = 0x88AAAACC.toInt(),
             eyeScaleY = 0.28f,
@@ -116,6 +122,7 @@ object EmotionPresets {
         ),
         // Physical revulsion — asymmetric sneer, aggressive recoil
         Emotion.DISGUST to FaceParams(
+            theme = "olive",
             color = 0xBBAADD66.toInt(),
             glowColor = 0x88BBEE88.toInt(),
             eyeScaleY = 0.6f,
@@ -134,6 +141,7 @@ object EmotionPresets {
         ),
         // Absolute terror — maximum eyes, scream mouth, body cowering
         Emotion.FEAR to FaceParams(
+            theme = "violet",
             color = 0xBBCC99EE.toInt(),
             glowColor = 0x88DDBBFF.toInt(),
             eyeScaleY = 1.5f,
@@ -153,6 +161,7 @@ object EmotionPresets {
         ),
         // Explosive rage — slit eyes, snarl, arms raised aggressively
         Emotion.ANGER to FaceParams(
+            theme = "flame",
             color = 0xBBFF3333.toInt(),
             glowColor = 0x88FF6666.toInt(),
             eyeScaleY = 0.42f,
@@ -171,6 +180,7 @@ object EmotionPresets {
         ),
         // Deep sorrow — drooping eyes, trembling frown, arms hanging
         Emotion.SADNESS to FaceParams(
+            theme = "ocean",
             color = 0xBB5577CC.toInt(),
             glowColor = 0x888899DD.toInt(),
             eyeScaleY = 0.65f,
@@ -196,6 +206,7 @@ object EmotionPresets {
 
     /** Standby: no mouth, neutral eyes */
     val STANDBY = FaceParams(
+        theme = "pastel",
         color = 0xBBCCDDEE.toInt(),
         glowColor = 0x88DDEEFF.toInt(),
         eyeScaleY = 1.0f,
@@ -208,6 +219,7 @@ object EmotionPresets {
 
     /** Offline: grey, closed eyes */
     val OFFLINE = FaceParams(
+        theme = "grey",
         color = 0xBBAAAABB.toInt(),
         glowColor = 0x88BBBBCC.toInt(),
         eyeScaleY = 0.0f,
@@ -220,6 +232,7 @@ object EmotionPresets {
 
     /** Thinking: half-closed eyes, no mouth */
     val THINKING = FaceParams(
+        theme = "sky",
         color = 0xBBCCDDEE.toInt(),
         glowColor = 0x88DDEEFF.toInt(),
         eyeScaleY = 0.5f,

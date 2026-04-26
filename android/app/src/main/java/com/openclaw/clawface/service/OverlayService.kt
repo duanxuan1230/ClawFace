@@ -122,7 +122,7 @@ class OverlayService : Service() {
         return Notification.Builder(this, AppConfig.NOTIFICATION_CHANNEL_ID)
             .setContentTitle(getString(R.string.overlay_notification_title))
             .setContentText(getString(R.string.overlay_notification_text))
-            .setSmallIcon(android.R.drawable.ic_menu_view)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .build()
@@ -308,6 +308,10 @@ class OverlayService : Service() {
         targetParams = targetParams.copy(color = color)
     }
 
+    fun setTheme(theme: String) {
+        targetParams = targetParams.copy(theme = theme)
+    }
+
     fun overrideParams(params: FaceParams) {
         targetParams = params
     }
@@ -345,6 +349,7 @@ class OverlayService : Service() {
             is Frame.ExpressionFrame -> applyExpressionParams(frame.params)
             is Frame.ModeFrame -> setMode(frame.mode)
             is Frame.ColorFrame -> setCustomColor(frame.color)
+            is Frame.ThemeFrame -> setTheme(frame.theme)
             else -> { /* heartbeat/ack/unknown handled by ConnectionManager */ }
         }
     }

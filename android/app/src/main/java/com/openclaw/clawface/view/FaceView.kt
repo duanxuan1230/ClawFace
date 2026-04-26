@@ -82,15 +82,7 @@ class FaceView(context: Context) : View(context) {
         canvas.rotate(offset.rotation, cx, cy)
         canvas.scale(offset.scaleX, offset.scaleY, cx, cy)
 
-        // 1. Ambient glow (behind everything)
-        GlowEffect.drawAmbientGlow(
-            canvas, cx, cy, faceWidthPx, faceHeightPx, cornerRadius,
-            faceParams.color, faceParams.glowColor, offset.alpha,
-        )
-
-        // 2. Background glass card removed — no backing plate behind ghost body
-
-        // 3. Ghost body (frosted glass clipped to ghost shape)
+        // Ghost body (no ambient glow frame — pure ghost only)
         bodyRenderer.draw(
             canvas, cx, cy, faceWidthPx, faceHeightPx,
             faceParams, offset.alpha,

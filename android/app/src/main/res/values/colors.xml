@@ -2,15 +2,25 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="background_dark">#FF1A1A2E</color>
-    <color name="primary">#FF6C63FF</color>
-    <color name="primary_variant">#FF3F3D9E</color>
+
+    <!-- Light pastel background (matching design mockup) -->
+    <color name="background_light">#FFF4F0FA</color>
+
+    <!-- Primary accent: soft purple -->
+    <color name="primary">#FF8B6CC0</color>
+    <color name="primary_variant">#FF6B4FA0</color>
     <color name="on_primary">#FFFFFFFF</color>
 
-    <!-- Glass morphism -->
-    <color name="glass_base">#1AFFFFFF</color>
-    <color name="glass_border">#33FFFFFF</color>
-    <color name="glass_text_primary">#E5FFFFFF</color>
-    <color name="glass_text_secondary">#B3FFFFFF</color>
-    <color name="glass_text_tertiary">#80FFFFFF</color>
+    <!-- Glass morphism (light mode) -->
+    <color name="glass_base">#BFFFFFFF</color>
+    <color name="glass_border">#A6FFFFFF</color>
+    <color name="glass_text_primary">#CC3C3264</color>
+    <color name="glass_text_secondary">#BF504678</color>
+    <color name="glass_text_tertiary">#80504678</color>
+
+    <!-- Button active state -->
+    <color name="glass_button_active">#8EDCC8FF</color>
+
+    <!-- Legacy aliases (kept for backward compatibility in case any code references them) -->
+    <color name="background_dark">@color/background_light</color>
 </resources>
