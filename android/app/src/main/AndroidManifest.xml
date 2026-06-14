@@ -37,6 +37,20 @@
                 android:value="Floating AI face overlay for emotional display" />
         </service>
 
+        <!-- Claude 配额桌面小组件 -->
+        <receiver
+            android:name=".widget.QuotaWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.openclaw.clawface.widget.ACTION_REFRESH" />
+                <action android:name="com.openclaw.clawface.widget.ACTION_MANUAL_REFRESH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quota_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>

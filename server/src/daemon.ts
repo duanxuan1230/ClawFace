@@ -14,6 +14,7 @@ import { createServer } from 'node:http';
 import { WebSocketServer } from 'ws';
 import { WsServer } from './ws-server.js';
 import { createHttpHandler } from './http-api.js';
+import { QuotaPoller } from './quota-poller.js';
 
 const port = parseInt(process.env.CLAWFACE_PORT ?? '9527', 10);
 
@@ -23,9 +24,13 @@ const wsServer = new WsServer();
 const wss = new WebSocketServer({ noServer: true });
 wsServer.attach(wss);
 
+// --- Quota poller（Claude 订阅配额定时抓取，默认关闭，由 App 开关控制） ---
+
+const quotaPoller = new QuotaPoller();
+
 // --- HTTP layer ---
 
-const httpHandler = createHttpHandler(wsServer);
+const httpHandler = createHttpHandler(wsServer, quotaPoller);
 const httpServer = createServer(httpHandler);
 
 // WebSocket upgrade only on /ws path
@@ -49,6 +54,7 @@ httpServer.listen(port, () => {
 
 function shutdown() {
   console.log('[ClawFace] Shutting down...');
+  quotaPoller.destroy();
   wsServer.destroy();
   wss.close();
   httpServer.close();

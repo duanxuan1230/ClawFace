@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 5h 配额条：粉 → 橙 渐变（对齐 watch quota face 内圈配色） -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <corners android:radius="8dp" />
+            <solid android:color="#1A3C3264" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape android:shape="rectangle">
+                <corners android:radius="8dp" />
+                <gradient
+                    android:angle="0"
+                    android:startColor="#FF9AB3"
+                    android:endColor="#FFC8A0"
+                    android:type="linear" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

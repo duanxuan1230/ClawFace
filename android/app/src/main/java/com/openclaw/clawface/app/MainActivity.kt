@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
 import android.view.View
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +25,8 @@ import com.openclaw.clawface.R
 import com.openclaw.clawface.databinding.ActivityMainBinding
 import com.openclaw.clawface.config.AppConfig
 import com.openclaw.clawface.network.ConnectionManager
+import com.openclaw.clawface.network.QuotaApi
+import com.openclaw.clawface.widget.QuotaWidgetProvider
 import com.openclaw.clawface.service.OverlayService
 import com.openclaw.clawface.state.Emotion
 import com.openclaw.clawface.state.EmotionPresets
@@ -106,6 +109,7 @@ class MainActivity : AppCompatActivity() {
         setupSliders()
         setupThemeButtons()
         setupNetworkButtons()
+        setupQuota()
         updatePermissionUI()
     }
 
@@ -113,6 +117,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         updatePermissionUI()
         tryBindService()
+        refreshQuotaCard()
     }
 
     override fun onPause() {
@@ -242,6 +247,110 @@ class MainActivity : AppCompatActivity() {
         binding.btnDisconnect.setOnClickListener {
             overlayService?.stopConnection()
             binding.tvConnectionStatus.text = "Status: Disconnected"
+        }
+    }
+
+    // --- Quota（Claude 订阅配额） ---
+
+    private var suppressQuotaSwitch = false
+
+    private fun setupQuota() {
+        binding.switchQuota.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressQuotaSwitch) return@setOnCheckedChangeListener
+            val server = QuotaApi.readServer(this@MainActivity)
+            if (server == null) {
+                binding.tvQuotaStatus.text = "请先在下方「NETWORK」连接服务器"
+                suppressQuotaSwitch = true
+                binding.switchQuota.isChecked = false
+                suppressQuotaSwitch = false
+                return@setOnCheckedChangeListener
+            }
+            val (host, port) = server
+            binding.tvQuotaStatus.text = if (isChecked) "正在开启并获取配额…" else "已关闭"
+            Thread {
+                try {
+                    QuotaApi.setPoller(host, port, isChecked)
+                    if (isChecked) {
+                        var snap: QuotaApi.Snapshot? = null
+                        for (i in 0 until 25) {
+                            Thread.sleep(1000)
+                            val s = QuotaApi.fetchQuota(host, port)
+                            if (s.fiveHour != null || s.sevenDay != null || s.error != null) {
+                                snap = s; break
+                            }
+                        }
+                        val result = snap
+                        runOnUiThread {
+                            if (result != null) applyQuotaToCard(result)
+                            else binding.tvQuotaStatus.text = "已开启，等待数据…"
+                        }
+                    } else {
+                        runOnUiThread { binding.tvQuotaStatus.text = "已关闭（不再获取配额）" }
+                    }
+                    QuotaWidgetProvider.refreshAll(this@MainActivity)
+                } catch (e: Exception) {
+                    runOnUiThread { binding.tvQuotaStatus.text = "操作失败：${e.message}" }
+                }
+            }.start()
+        }
+        refreshQuotaCard()
+    }
+
+    private fun refreshQuotaCard() {
+        val server = QuotaApi.readServer(this@MainActivity) ?: run {
+            binding.tvQuotaStatus.text = "请先连接服务器后再开启配额"
+            return
+        }
+        val (host, port) = server
+        Thread {
+            try {
+                val status = QuotaApi.fetchStatus(host, port)
+                val snap = QuotaApi.fetchQuota(host, port)
+                runOnUiThread {
+                    suppressQuotaSwitch = true
+                    binding.switchQuota.isChecked = status.enabled
+                    suppressQuotaSwitch = false
+                    applyQuotaToCard(snap)
+                    when {
+                        !status.configured -> binding.tvQuotaStatus.text = "服务端未配置凭据"
+                        !status.enabled -> binding.tvQuotaStatus.text = "开关打开后开始实时获取配额"
+                        else -> {}
+                    }
+                }
+            } catch (e: Exception) {
+                runOnUiThread { binding.tvQuotaStatus.text = "未连接到服务器" }
+            }
+        }.start()
+    }
+
+    private fun applyQuotaToCard(snap: QuotaApi.Snapshot) {
+        bindBucketCard(snap.fiveHour, binding.progressQuota5h, binding.tvQuota5hPct, binding.tvQuota5hReset)
+        bindBucketCard(snap.sevenDay, binding.progressQuota7d, binding.tvQuota7dPct, binding.tvQuota7dReset)
+        binding.tvQuotaStatus.text = when {
+            snap.error != null && snap.fiveHour == null && snap.sevenDay == null ->
+                "暂无数据：${snap.error}"
+            snap.error != null -> "注意：${snap.error}"
+            snap.fetchedAt != null ->
+                "更新于 " + java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                    .format(java.util.Date(snap.fetchedAt))
+            else -> ""
+        }
+    }
+
+    private fun bindBucketCard(
+        bucket: QuotaApi.Bucket?,
+        bar: ProgressBar,
+        pct: TextView,
+        reset: TextView,
+    ) {
+        if (bucket == null) {
+            bar.progress = 0
+            pct.text = "--%"
+            reset.text = ""
+        } else {
+            bar.progress = bucket.utilization
+            pct.text = "${bucket.utilization}%"
+            reset.text = QuotaApi.formatReset(bucket.resetsAt)
         }
     }
 

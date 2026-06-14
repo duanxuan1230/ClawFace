@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 雾化玻璃背景：大幅降低白色不透明度，让桌面壁纸透上来形成玻璃感。
+     注：第三方 widget 无法真正虚化壁纸（系统私有能力），这里用低不透明度 + 顶部高光近似。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:startColor="#52FFFFFF"
+        android:endColor="#33FFFFFF" />
+    <corners android:radius="28dp" />
+    <stroke android:width="1dp" android:color="#5CFFFFFF" />
+</shape>

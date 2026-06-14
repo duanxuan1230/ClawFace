@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="12dp">
+
+    <!-- 头部：幽灵 + ClawFace + 更新时间 + 刷新键 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="7dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_ghost"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="ClawFace" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="ClawFace"
+            android:textColor="#E62A2440"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.02" />
+
+        <TextView
+            android:id="@+id/widgetUpdated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="点击刷新"
+            android:textColor="#A65A5078"
+            android:textSize="10sp"
+            android:layout_marginEnd="6dp" />
+
+        <ImageView
+            android:id="@+id/widgetRefresh"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:padding="2dp"
+            android:src="@drawable/ic_refresh"
+            android:contentDescription="刷新" />
+    </LinearLayout>
+
+    <!-- 5 小时 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:src="@drawable/dot_5h"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="5 小时"
+            android:textColor="#DD3C3264"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widgetReset5h"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text=""
+            android:textColor="#A65A5078"
+            android:textSize="9sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:layout_marginStart="8dp" />
+
+        <TextView
+            android:id="@+id/widgetPct5h"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--%"
+            android:textColor="#F22A2440"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:layout_marginStart="6dp" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/widgetBar5h"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginBottom="9dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/widget_progress_5h" />
+
+    <!-- 本周 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:src="@drawable/dot_7d"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="本周"
+            android:textColor="#DD3C3264"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widgetReset7d"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text=""
+            android:textColor="#A65A5078"
+            android:textSize="9sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:layout_marginStart="8dp" />
+
+        <TextView
+            android:id="@+id/widgetPct7d"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--%"
+            android:textColor="#F22A2440"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:layout_marginStart="6dp" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/widgetBar7d"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="3dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/widget_progress_7d" />
+
+    <!-- 状态/错误（正常为空，自动塌缩） -->
+    <TextView
+        android:id="@+id/widgetStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#A65A5078"
+        android:textSize="9sp"
+        android:gravity="center"
+        android:layout_marginTop="4dp" />
+</LinearLayout>
