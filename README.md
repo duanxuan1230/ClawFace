@@ -151,6 +151,29 @@ npx tsx bin/clawface-cli.ts status
 npx tsx bin/clawface-cli.ts status --host <server-ip> --port 9527
 ```
 
+### 配额轮询与离线测试
+
+服务端 quota-poller 每次刷新先读取 HappyClaw `GET /api/agent-profiles` 的
+`inherited_model.system_main.model_config_id`，再请求该连接的 usage 接口，不回退到连接列表首项。
+登录 cookie 缓存复用，401 重登一次；403 直接报错，不重试登录。
+
+Claude 旧格式保持兼容，未知（null）利用率显示为空桶而非 0。
+Codex 优先按 `activeLimit` 精确选择限额族；没有 activeLimit 时仅接受唯一族。
+activeLimit 未匹配时，仅允许唯一的默认 `codex` 族作为后备；多族歧义或其他未匹配情况报错。
+只把 300/10080 分钟窗口映射为五小时/七天，重置时间从 epoch 秒转换为 ISO，
+快照时间使用 `observedAt` 毫秒；Opus/Sonnet 桶为空，其他时长不冒充已知窗口。
+无快照、unsupported、needs_relogin 或请求失败时清空数据；刷新期间及重启后不展示旧连接缓存。
+重启仅恢复轮询开关，关闭状态不会自动发请求。Android HTTP 字段和 MCP 不变。
+
+无需启动服务、读取真实凭据或访问上游即可验证（所有 HTTP 请求均 mock）：
+
+```bash
+cd server
+node --import tsx --test test/quota-poller.test.ts
+npm run typecheck
+npm run build
+```
+
 ### 5. 接入 AI Agent（MCP）
 
 在 AI Agent 的 MCP Server 配置中添加 ClawFace：
