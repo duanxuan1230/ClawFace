@@ -71,6 +71,143 @@
             android:layout_gravity="center"
             android:layout_marginBottom="8dp" />
 
+        <!-- Network Card (pinned at top as base config) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            android:background="@drawable/glass_card_bg">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="NETWORK"
+                    android:textColor="@color/glass_text_secondary"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="10dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
+
+                    <EditText
+                        android:id="@+id/etHost"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="2"
+                        android:hint="192.168.1.100"
+                        android:textColor="@color/glass_text_primary"
+                        android:textColorHint="@color/glass_text_tertiary"
+                        android:textSize="13sp"
+                        android:background="@drawable/glass_button_bg"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:inputType="text"
+                        android:singleLine="true"
+                        android:layout_marginEnd="6dp" />
+
+                    <EditText
+                        android:id="@+id/etPort"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:hint="9527"
+                        android:textColor="@color/glass_text_primary"
+                        android:textColorHint="@color/glass_text_tertiary"
+                        android:textSize="13sp"
+                        android:background="@drawable/glass_button_bg"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:inputType="number"
+                        android:singleLine="true" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnConnect"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:text="Connect"
+                        style="@style/Widget.ClawFace.Button.Glass"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="6dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDisconnect"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:text="Disconnect"
+                        style="@style/Widget.ClawFace.Button.Glass"
+                        android:textSize="12sp"
+                        android:layout_marginStart="6dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvConnectionStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Status: Disconnected"
+                    android:textColor="@color/glass_text_tertiary"
+                    android:textSize="11sp"
+                    android:gravity="center" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Tab Switcher: EMOTIONS / USAGE -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTabEmotions"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="EMOTIONS"
+                style="@style/Widget.ClawFace.Button.Glass"
+                android:textSize="12sp"
+                android:layout_marginEnd="6dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTabUsage"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="USAGE"
+                style="@style/Widget.ClawFace.Button.Glass"
+                android:textSize="12sp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <!-- Tab 1: EMOTIONS -->
+        <LinearLayout
+            android:id="@+id/layoutTabEmotions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
         <!-- Control Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -107,146 +244,6 @@
                     style="@style/Widget.ClawFace.Button.Glass"
                     android:textSize="13sp"
                     android:layout_marginStart="6dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Quota Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0dp"
-            app:cardBackgroundColor="@android:color/transparent"
-            android:background="@drawable/glass_card_bg">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="10dp">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="CLAUDE 配额"
-                        android:textColor="@color/glass_text_secondary"
-                        android:textSize="11sp"
-                        android:letterSpacing="0.15" />
-
-                    <com.google.android.material.switchmaterial.SwitchMaterial
-                        android:id="@+id/switchQuota"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-
-                <!-- 5h 行 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="32dp"
-                        android:layout_height="wrap_content"
-                        android:text="5h"
-                        android:textColor="@color/glass_text_secondary"
-                        android:textSize="12sp" />
-
-                    <ProgressBar
-                        android:id="@+id/progressQuota5h"
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="0dp"
-                        android:layout_height="10dp"
-                        android:layout_weight="1"
-                        android:max="100"
-                        android:progress="0"
-                        android:progressDrawable="@drawable/widget_progress" />
-
-                    <TextView
-                        android:id="@+id/tvQuota5hPct"
-                        android:layout_width="46dp"
-                        android:layout_height="wrap_content"
-                        android:text="--%"
-                        android:gravity="end"
-                        android:textColor="@color/glass_text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvQuota5hReset"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text=""
-                    android:textColor="@color/glass_text_tertiary"
-                    android:textSize="10sp"
-                    android:layout_marginStart="32dp"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- 7d 行 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="32dp"
-                        android:layout_height="wrap_content"
-                        android:text="7d"
-                        android:textColor="@color/glass_text_secondary"
-                        android:textSize="12sp" />
-
-                    <ProgressBar
-                        android:id="@+id/progressQuota7d"
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="0dp"
-                        android:layout_height="10dp"
-                        android:layout_weight="1"
-                        android:max="100"
-                        android:progress="0"
-                        android:progressDrawable="@drawable/widget_progress" />
-
-                    <TextView
-                        android:id="@+id/tvQuota7dPct"
-                        android:layout_width="46dp"
-                        android:layout_height="wrap_content"
-                        android:text="--%"
-                        android:gravity="end"
-                        android:textColor="@color/glass_text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvQuota7dReset"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text=""
-                    android:textColor="@color/glass_text_tertiary"
-                    android:textSize="10sp"
-                    android:layout_marginStart="32dp" />
-
-                <TextView
-                    android:id="@+id/tvQuotaStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="开关打开后开始实时获取配额"
-                    android:textColor="@color/glass_text_tertiary"
-                    android:textSize="11sp"
-                    android:gravity="center"
-                    android:layout_marginTop="8dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -544,108 +541,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Network Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0dp"
-            app:cardBackgroundColor="@android:color/transparent"
-            android:background="@drawable/glass_card_bg">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="NETWORK"
-                    android:textColor="@color/glass_text_secondary"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.15"
-                    android:layout_marginBottom="10dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
-
-                    <EditText
-                        android:id="@+id/etHost"
-                        android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="2"
-                        android:hint="192.168.1.100"
-                        android:textColor="@color/glass_text_primary"
-                        android:textColorHint="@color/glass_text_tertiary"
-                        android:textSize="13sp"
-                        android:background="@drawable/glass_button_bg"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:inputType="text"
-                        android:singleLine="true"
-                        android:layout_marginEnd="6dp" />
-
-                    <EditText
-                        android:id="@+id/etPort"
-                        android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
-                        android:hint="9527"
-                        android:textColor="@color/glass_text_primary"
-                        android:textColorHint="@color/glass_text_tertiary"
-                        android:textSize="13sp"
-                        android:background="@drawable/glass_button_bg"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:inputType="number"
-                        android:singleLine="true" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnConnect"
-                        android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
-                        android:text="Connect"
-                        style="@style/Widget.ClawFace.Button.Glass"
-                        android:textSize="12sp"
-                        android:layout_marginEnd="6dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnDisconnect"
-                        android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
-                        android:text="Disconnect"
-                        style="@style/Widget.ClawFace.Button.Glass"
-                        android:textSize="12sp"
-                        android:layout_marginStart="6dp" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvConnectionStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Status: Disconnected"
-                    android:textColor="@color/glass_text_tertiary"
-                    android:textSize="11sp"
-                    android:gravity="center" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
         <!-- Parameters Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -681,6 +576,195 @@
                 <include layout="@layout/slider_item" android:id="@+id/sliderMouthOpen" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+        <!-- Tab 2: USAGE -->
+        <LinearLayout
+            android:id="@+id/layoutTabUsage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+        <!-- Quota Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            android:background="@drawable/glass_card_bg">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="10dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="USAGE 配额"
+                        android:textColor="@color/glass_text_secondary"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.15" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnQuotaRefresh"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="刷新"
+                        style="@style/Widget.ClawFace.Button.Glass"
+                        android:textSize="11sp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="12dp"
+                        android:layout_marginEnd="8dp" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchQuota"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <!-- 模型连接下拉框 -->
+                <Spinner
+                    android:id="@+id/spinnerProvider"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:background="@drawable/glass_button_bg"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- 单组配额展示（Claude / Codex） -->
+                <LinearLayout
+                    android:id="@+id/layoutQuotaSingle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- 5h 行 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="32dp"
+                            android:layout_height="wrap_content"
+                            android:text="5h"
+                            android:textColor="@color/glass_text_secondary"
+                            android:textSize="12sp" />
+
+                        <ProgressBar
+                            android:id="@+id/progressQuota5h"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="0dp"
+                            android:layout_height="10dp"
+                            android:layout_weight="1"
+                            android:max="100"
+                            android:progress="0"
+                            android:progressDrawable="@drawable/widget_progress" />
+
+                        <TextView
+                            android:id="@+id/tvQuota5hPct"
+                            android:layout_width="46dp"
+                            android:layout_height="wrap_content"
+                            android:text="--%"
+                            android:gravity="end"
+                            android:textColor="@color/glass_text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvQuota5hReset"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textColor="@color/glass_text_tertiary"
+                        android:textSize="10sp"
+                        android:layout_marginStart="32dp"
+                        android:layout_marginBottom="8dp" />
+
+                    <!-- 7d 行 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="32dp"
+                            android:layout_height="wrap_content"
+                            android:text="7d"
+                            android:textColor="@color/glass_text_secondary"
+                            android:textSize="12sp" />
+
+                        <ProgressBar
+                            android:id="@+id/progressQuota7d"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="0dp"
+                            android:layout_height="10dp"
+                            android:layout_weight="1"
+                            android:max="100"
+                            android:progress="0"
+                            android:progressDrawable="@drawable/widget_progress" />
+
+                        <TextView
+                            android:id="@+id/tvQuota7dPct"
+                            android:layout_width="46dp"
+                            android:layout_height="wrap_content"
+                            android:text="--%"
+                            android:gravity="end"
+                            android:textColor="@color/glass_text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvQuota7dReset"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textColor="@color/glass_text_tertiary"
+                        android:textSize="10sp"
+                        android:layout_marginStart="32dp" />
+                </LinearLayout>
+
+                <!-- 多组配额展示（Gemini / AGY） -->
+                <LinearLayout
+                    android:id="@+id/layoutQuotaGroups"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvQuotaStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="开关打开后开始实时获取配额"
+                    android:textColor="@color/glass_text_tertiary"
+                    android:textSize="11sp"
+                    android:gravity="center"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
 
         <!-- Bottom spacer -->
         <View

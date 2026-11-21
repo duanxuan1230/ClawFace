@@ -6,8 +6,10 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 /**
  * 访问 ClawFace daemon 的配额接口（HTTP，端口默认 9527）。
@@ -37,11 +39,33 @@ object QuotaApi {
 
     data class Bucket(val utilization: Int, val resetsAt: String?)
 
+    data class QuotaGroup(
+        val group: String,
+        val fiveHour: Bucket?,
+        val sevenDay: Bucket?,
+    )
+
+    data class Provider(
+        val id: String,
+        val name: String,
+        val runner: String,
+        val isSystemMain: Boolean,
+    )
+
+    data class ProvidersResult(
+        val providers: List<Provider>,
+        val selectedProviderId: String?,
+        val systemMainId: String?,
+    )
+
     data class Snapshot(
         val fiveHour: Bucket?,
         val sevenDay: Bucket?,
         val sevenDayOpus: Bucket?,
         val sevenDaySonnet: Bucket?,
+        val groups: List<QuotaGroup>,
+        val providerId: String?,
+        val providerName: String?,
         val fetchedAt: Long?,
         val error: String?,
     )
@@ -101,6 +125,51 @@ object QuotaApi {
         }
     }
 
+    /** 获取 HappyClaw 模型连接列表与当前选中的连接 */
+    fun fetchProviders(host: String, port: Int): ProvidersResult {
+        val req = Request.Builder().url("${base(host, port)}/api/quota/providers").get().build()
+        client.newCall(req).execute().use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}")
+            val obj = JSONObject(body)
+            val arr = obj.optJSONArray("providers") ?: JSONArray()
+            val providers = buildList {
+                for (i in 0 until arr.length()) {
+                    val p = arr.optJSONObject(i) ?: continue
+                    val id = p.optString("id")
+                    if (id.isBlank()) continue
+                    add(
+                        Provider(
+                            id = id,
+                            name = p.optString("name", id),
+                            runner = p.optString("runner", "claude"),
+                            isSystemMain = p.optBoolean("isSystemMain", false),
+                        ),
+                    )
+                }
+            }
+            return ProvidersResult(
+                providers = providers,
+                selectedProviderId = if (obj.isNull("selectedProviderId")) null else obj.optString("selectedProviderId").takeIf { it.isNotBlank() },
+                systemMainId = if (obj.isNull("systemMainId")) null else obj.optString("systemMainId").takeIf { it.isNotBlank() },
+            )
+        }
+    }
+
+    /** 切换当前选中的模型连接并立即拉取一次配额 */
+    fun selectProvider(host: String, port: Int, providerId: String?): Snapshot {
+        val payload = JSONObject().put("providerId", providerId ?: JSONObject.NULL).toString()
+        val req = Request.Builder()
+            .url("${base(host, port)}/api/quota/provider")
+            .post(payload.toRequestBody(JSON))
+            .build()
+        refreshClient.newCall(req).execute().use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}")
+            return parseSnapshot(JSONObject(body))
+        }
+    }
+
     /** 手动强制刷新：服务端立即抓一次（不论开关状态），返回最新快照。耗时较长。 */
     fun refresh(host: String, port: Int): Snapshot {
         val req = Request.Builder()
@@ -121,7 +190,23 @@ object QuotaApi {
         val util = obj.optDouble("utilization", Double.NaN)
         if (util.isNaN()) return null
         val reset = if (obj.isNull("resets_at")) null else obj.optString("resets_at")
-        return Bucket(util.toInt(), reset)
+        return Bucket(util.roundToInt(), reset)
+    }
+
+    private fun parseGroups(arr: JSONArray?): List<QuotaGroup> {
+        if (arr == null) return emptyList()
+        return buildList {
+            for (i in 0 until arr.length()) {
+                val g = arr.optJSONObject(i) ?: continue
+                add(
+                    QuotaGroup(
+                        group = g.optString("group", "Default"),
+                        fiveHour = parseBucket(g.optJSONObject("five_hour")),
+                        sevenDay = parseBucket(g.optJSONObject("seven_day")),
+                    ),
+                )
+            }
+        }
     }
 
     private fun parseSnapshot(obj: JSONObject): Snapshot {
@@ -131,6 +216,9 @@ object QuotaApi {
             sevenDay = parseBucket(data?.optJSONObject("seven_day")),
             sevenDayOpus = parseBucket(data?.optJSONObject("seven_day_opus")),
             sevenDaySonnet = parseBucket(data?.optJSONObject("seven_day_sonnet")),
+            groups = parseGroups(obj.optJSONArray("groups")),
+            providerId = if (obj.isNull("providerId")) null else obj.optString("providerId").takeIf { it.isNotBlank() },
+            providerName = if (obj.isNull("providerName")) null else obj.optString("providerName").takeIf { it.isNotBlank() },
             fetchedAt = if (obj.isNull("fetchedAt")) null else obj.optLong("fetchedAt").takeIf { it > 0 },
             error = if (obj.isNull("error")) null else obj.optString("error"),
         )

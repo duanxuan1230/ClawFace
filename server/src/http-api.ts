@@ -55,6 +55,20 @@ export function createHttpHandler(wsServer: WsServer, quotaPoller: QuotaPoller) 
         await quotaPoller.pollOnce();
         res.writeHead(200);
         res.end(JSON.stringify(quotaPoller.getQuota()));
+      } else if (req.method === 'GET' && path === '/api/quota/providers') {
+        const result = await quotaPoller.getProviders();
+        res.writeHead(200);
+        res.end(JSON.stringify(result));
+      } else if (req.method === 'POST' && path === '/api/quota/provider') {
+        const body = await readBody(req);
+        const parsed = body ? JSON.parse(body) : {};
+        const providerId =
+          parsed.providerId === null || typeof parsed.providerId === 'string'
+            ? parsed.providerId
+            : null;
+        const snap = await quotaPoller.selectProvider(providerId);
+        res.writeHead(200);
+        res.end(JSON.stringify(snap));
       } else {
         res.writeHead(404);
         res.end(JSON.stringify({ error: 'Not Found' }));

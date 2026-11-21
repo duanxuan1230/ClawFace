@@ -124,3 +124,98 @@ test('poller resolves system main each time, shares refresh, reuses cookie and c
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('AGY quotas normalize all groups and pick Gemini Models as primary data', () => {
+  const result = normalizeUsage({
+    kind: 'agy_quotas',
+    fetchedAt: '2026-11-21T03:00:00.000Z',
+    groups: [
+      {
+        group: 'Claude',
+        fiveHour: { label: '5h', windowKind: 'five_hour', usedPercent: 12, remainingPercent: 88, resetsAt: '2026-11-21T08:00:00.000Z' },
+        weekly: { label: 'Weekly', windowKind: 'weekly', usedPercent: 30, remainingPercent: 70, resetsAt: null },
+        others: [],
+      },
+      {
+        group: 'Gemini Models',
+        fiveHour: { label: '5h', windowKind: 'five_hour', usedPercent: 25, remainingPercent: 75, resetsAt: '2026-11-21T07:00:00.000Z' },
+        weekly: { label: 'Weekly', windowKind: 'weekly', usedPercent: 40, remainingPercent: 60, resetsAt: '2026-11-28T00:00:00.000Z' },
+        others: [],
+      },
+    ],
+  });
+  assert.equal(result.error, null);
+  assert.equal(result.groups?.length, 2);
+  assert.equal(result.data?.five_hour?.utilization, 25);
+  assert.equal(result.data?.seven_day?.utilization, 40);
+  assert.equal(result.fetchedAt, Date.parse('2026-11-21T03:00:00.000Z'));
+});
+
+test('poller supports listing providers, selecting provider, and reporting unsupported usage', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'quota-provider-test-'));
+  const savedEnv = { ...process.env };
+  const savedFetch = globalThis.fetch;
+  try {
+    writeFileSync(join(dir, 'password'), 'synthetic-test-password');
+    process.env.QUOTA_CONFIG_FILE = join(dir, 'absent');
+    process.env.QUOTA_STATE_FILE = join(dir, 'state.json');
+    process.env.HC_USER = 'test-user';
+    process.env.HC_PASS_FILE = join(dir, 'password');
+    process.env.HC_BASE = 'http://test.invalid';
+    globalThis.fetch = async (input) => {
+      const path = new URL(String(input)).pathname;
+      if (path === '/api/auth/login') {
+        return new Response('{}', { headers: { 'set-cookie': 'happyclaw_session=synthetic; Path=/' } });
+      }
+      if (path === '/api/agent-profiles') {
+        return Response.json({ inherited_model: { system_main: { model_config_id: 'p-claude' } } });
+      }
+      if (path === '/api/config/claude/providers') {
+        return Response.json({
+          providers: [
+            { id: 'p-claude', name: 'Claude Main', runner: 'claude' },
+            { id: 'p-agy', name: 'Gemini AGY', runner: 'agy' },
+            { id: 'p-apikey', name: 'ThirdParty Key', runner: 'claude' },
+          ],
+        });
+      }
+      if (path === '/api/config/claude/providers/p-agy/usage') {
+        return Response.json({
+          kind: 'agy_quotas',
+          fetchedAt: '2026-11-21T03:00:00.000Z',
+          groups: [
+            { group: 'Gemini Models', fiveHour: { usedPercent: 18, resetsAt: null }, weekly: { usedPercent: 33, resetsAt: null } },
+          ],
+        });
+      }
+      if (path === '/api/config/claude/providers/p-apikey/usage') {
+        return Response.json({ error: 'No OAuth' }, { status: 400 });
+      }
+      return Response.json({ data: { five_hour: { utilization: 5 } }, fetchedAt: 100 });
+    };
+    const poller = new QuotaPoller();
+    const list = await poller.getProviders();
+    assert.equal(list.providers.length, 3);
+    assert.equal(list.providers[0].isSystemMain, true);
+    assert.equal(list.selectedProviderId, null);
+
+    const agySnap = await poller.selectProvider('p-agy');
+    assert.equal(agySnap.providerId, 'p-agy');
+    assert.equal(agySnap.providerName, 'Gemini AGY');
+    assert.equal(agySnap.data?.five_hour?.utilization, 18);
+
+    const restored = new QuotaPoller();
+    await restored.pollOnce();
+    assert.equal(restored.getQuota().providerId, 'p-agy');
+    restored.destroy();
+
+    const unsupportedSnap = await poller.selectProvider('p-apikey');
+    assert.equal(unsupportedSnap.error, '不支持用量查询');
+    assert.equal(unsupportedSnap.providerName, 'ThirdParty Key');
+    poller.destroy();
+  } finally {
+    globalThis.fetch = savedFetch;
+    process.env = savedEnv;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

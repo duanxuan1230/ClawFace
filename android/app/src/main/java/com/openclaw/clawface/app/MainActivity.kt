@@ -14,6 +14,8 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -103,6 +105,7 @@ class MainActivity : AppCompatActivity() {
 
         setupGlassTinting()
         setupPermissionButtons()
+        setupTabs()
         setupServiceButtons()
         setupEmotionButtons()
         setupModeButtons()
@@ -140,6 +143,19 @@ class MainActivity : AppCompatActivity() {
                 emotionOverlay = baseLayer.mutate() as GradientDrawable
             }
         }
+    }
+
+    private fun setupTabs() {
+        val tabButtons = listOf(binding.btnTabEmotions, binding.btnTabUsage)
+        fun selectTab(isUsage: Boolean) {
+            binding.layoutTabEmotions.visibility = if (isUsage) View.GONE else View.VISIBLE
+            binding.layoutTabUsage.visibility = if (isUsage) View.VISIBLE else View.GONE
+            highlightButton(if (isUsage) binding.btnTabUsage else binding.btnTabEmotions, tabButtons)
+            if (isUsage) refreshQuotaCard()
+        }
+        selectTab(false)
+        binding.btnTabEmotions.setOnClickListener { selectTab(false) }
+        binding.btnTabUsage.setOnClickListener { selectTab(true) }
     }
 
     private fun setupPermissionButtons() {
@@ -250,16 +266,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // --- Quota（Claude 订阅配额） ---
+    // --- Quota（多模型订阅配额） ---
 
     private var suppressQuotaSwitch = false
+    private var suppressProviderSelect = false
+    private var providerList: List<QuotaApi.Provider> = emptyList()
 
     private fun setupQuota() {
         binding.switchQuota.setOnCheckedChangeListener { _, isChecked ->
             if (suppressQuotaSwitch) return@setOnCheckedChangeListener
             val server = QuotaApi.readServer(this@MainActivity)
             if (server == null) {
-                binding.tvQuotaStatus.text = "请先在下方「NETWORK」连接服务器"
+                binding.tvQuotaStatus.text = "请先在上方「NETWORK」连接服务器"
                 suppressQuotaSwitch = true
                 binding.switchQuota.isChecked = false
                 suppressQuotaSwitch = false
@@ -275,7 +293,7 @@ class MainActivity : AppCompatActivity() {
                         for (i in 0 until 25) {
                             Thread.sleep(1000)
                             val s = QuotaApi.fetchQuota(host, port)
-                            if (s.fiveHour != null || s.sevenDay != null || s.error != null) {
+                            if (s.fiveHour != null || s.sevenDay != null || s.groups.isNotEmpty() || s.error != null) {
                                 snap = s; break
                             }
                         }
@@ -293,6 +311,46 @@ class MainActivity : AppCompatActivity() {
                 }
             }.start()
         }
+
+        binding.btnQuotaRefresh.setOnClickListener {
+            val server = QuotaApi.readServer(this@MainActivity) ?: run {
+                binding.tvQuotaStatus.text = "请先在上方「NETWORK」连接服务器"
+                return@setOnClickListener
+            }
+            val (host, port) = server
+            binding.tvQuotaStatus.text = "正在刷新配额…"
+            Thread {
+                try {
+                    val snap = QuotaApi.refresh(host, port)
+                    runOnUiThread { applyQuotaToCard(snap) }
+                    QuotaWidgetProvider.refreshAll(this@MainActivity)
+                } catch (e: Exception) {
+                    runOnUiThread { binding.tvQuotaStatus.text = "刷新失败：${e.message}" }
+                }
+            }.start()
+        }
+
+        binding.spinnerProvider.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (suppressProviderSelect) return
+                val provider = providerList.getOrNull(position) ?: return
+                val server = QuotaApi.readServer(this@MainActivity) ?: return
+                val (host, port) = server
+                binding.tvQuotaStatus.text = "正在切换至 ${provider.name}…"
+                Thread {
+                    try {
+                        val snap = QuotaApi.selectProvider(host, port, provider.id)
+                        runOnUiThread { applyQuotaToCard(snap) }
+                        QuotaWidgetProvider.refreshAll(this@MainActivity)
+                    } catch (e: Exception) {
+                        runOnUiThread { binding.tvQuotaStatus.text = "切换失败：${e.message}" }
+                    }
+                }.start()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
         refreshQuotaCard()
     }
 
@@ -306,14 +364,21 @@ class MainActivity : AppCompatActivity() {
             try {
                 val status = QuotaApi.fetchStatus(host, port)
                 val snap = QuotaApi.fetchQuota(host, port)
+                val providersResult = runCatching { QuotaApi.fetchProviders(host, port) }.getOrNull()
                 runOnUiThread {
                     suppressQuotaSwitch = true
                     binding.switchQuota.isChecked = status.enabled
                     suppressQuotaSwitch = false
+
+                    if (providersResult != null) {
+                        bindProviderSpinner(providersResult)
+                    }
+
                     applyQuotaToCard(snap)
                     when {
                         !status.configured -> binding.tvQuotaStatus.text = "服务端未配置凭据"
-                        !status.enabled -> binding.tvQuotaStatus.text = "开关打开后开始实时获取配额"
+                        !status.enabled && snap.error == null && snap.fiveHour == null && snap.sevenDay == null && snap.groups.isEmpty() ->
+                            binding.tvQuotaStatus.text = "开关打开后开始实时获取配额"
                         else -> {}
                     }
                 }
@@ -323,12 +388,68 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
+    private fun bindProviderSpinner(res: QuotaApi.ProvidersResult) {
+        providerList = res.providers
+        val labels = res.providers.map { p ->
+            if (p.isSystemMain) "${p.name} (主连接)" else p.name
+        }
+        suppressProviderSelect = true
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, labels)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerProvider.adapter = adapter
+        val targetId = res.selectedProviderId ?: res.systemMainId
+        val idx = res.providers.indexOfFirst { it.id == targetId }
+        if (idx >= 0) binding.spinnerProvider.setSelection(idx, false)
+        suppressProviderSelect = false
+    }
+
     private fun applyQuotaToCard(snap: QuotaApi.Snapshot) {
-        bindBucketCard(snap.fiveHour, binding.progressQuota5h, binding.tvQuota5hPct, binding.tvQuota5hReset)
-        bindBucketCard(snap.sevenDay, binding.progressQuota7d, binding.tvQuota7dPct, binding.tvQuota7dReset)
+        if (snap.groups.size > 1) {
+            binding.layoutQuotaSingle.visibility = View.GONE
+            binding.layoutQuotaGroups.visibility = View.VISIBLE
+            binding.layoutQuotaGroups.removeAllViews()
+            snap.groups.forEach { g ->
+                val itemView = layoutInflater.inflate(
+                    R.layout.quota_group_item,
+                    binding.layoutQuotaGroups,
+                    false,
+                )
+                itemView.findViewById<TextView>(R.id.tvGroupName).text = g.group
+                bindBucketCard(
+                    g.fiveHour,
+                    itemView.findViewById(R.id.progressGroup5h),
+                    itemView.findViewById(R.id.tvGroup5hPct),
+                    itemView.findViewById(R.id.tvGroup5hReset),
+                )
+                bindBucketCard(
+                    g.sevenDay,
+                    itemView.findViewById(R.id.progressGroup7d),
+                    itemView.findViewById(R.id.tvGroup7dPct),
+                    itemView.findViewById(R.id.tvGroup7dReset),
+                )
+                binding.layoutQuotaGroups.addView(itemView)
+            }
+        } else {
+            binding.layoutQuotaGroups.visibility = View.GONE
+            binding.layoutQuotaSingle.visibility = View.VISIBLE
+            val single = snap.groups.firstOrNull()
+            bindBucketCard(
+                single?.fiveHour ?: snap.fiveHour,
+                binding.progressQuota5h,
+                binding.tvQuota5hPct,
+                binding.tvQuota5hReset,
+            )
+            bindBucketCard(
+                single?.sevenDay ?: snap.sevenDay,
+                binding.progressQuota7d,
+                binding.tvQuota7dPct,
+                binding.tvQuota7dReset,
+            )
+        }
+
+        val hasAnyData = snap.fiveHour != null || snap.sevenDay != null || snap.groups.isNotEmpty()
         binding.tvQuotaStatus.text = when {
-            snap.error != null && snap.fiveHour == null && snap.sevenDay == null ->
-                "暂无数据：${snap.error}"
+            snap.error != null && !hasAnyData -> snap.error
             snap.error != null -> "注意：${snap.error}"
             snap.fetchedAt != null ->
                 "更新于 " + java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())

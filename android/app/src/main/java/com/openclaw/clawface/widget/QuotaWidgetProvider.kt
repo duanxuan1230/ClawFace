@@ -64,12 +64,15 @@ class QuotaWidgetProvider : AppWidgetProvider() {
         }
 
         private fun applySnapshot(views: RemoteViews, snap: QuotaApi.Snapshot) {
+            val title = if (!snap.providerName.isNullOrBlank()) "ClawFace · ${snap.providerName}" else "ClawFace"
+            views.setTextViewText(R.id.widgetTitle, title)
+
             bindBucket(views, snap.fiveHour, R.id.widgetBar5h, R.id.widgetPct5h, R.id.widgetReset5h)
             bindBucket(views, snap.sevenDay, R.id.widgetBar7d, R.id.widgetPct7d, R.id.widgetReset7d)
 
             when {
                 snap.fiveHour == null && snap.sevenDay == null && snap.error != null ->
-                    views.setTextViewText(R.id.widgetStatus, "暂无数据（在 App 打开开关，或点右上角刷新）")
+                    views.setTextViewText(R.id.widgetStatus, snap.error)
                 snap.error != null ->
                     views.setTextViewText(R.id.widgetStatus, "注意：${snap.error}")
                 else ->

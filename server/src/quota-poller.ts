@@ -30,8 +30,24 @@ export interface QuotaData {
   seven_day_sonnet: QuotaBucket | null;
 }
 
+export interface QuotaGroup {
+  group: string;
+  five_hour: QuotaBucket | null;
+  seven_day: QuotaBucket | null;
+}
+
+export interface ProviderItem {
+  id: string;
+  name: string;
+  runner: string;
+  isSystemMain: boolean;
+}
+
 export interface QuotaSnapshot {
   data: QuotaData | null;
+  groups?: QuotaGroup[];
+  providerId?: string | null;
+  providerName?: string | null;
   fetchedAt: number | null; // epoch ms
   error: string | null;
 }
@@ -62,11 +78,58 @@ const emptyData = (): QuotaData => ({
   five_hour: null, seven_day: null, seven_day_opus: null, seven_day_sonnet: null,
 });
 
+const parseFetchedAt = (v: unknown): number | null => {
+  if (finite(v)) return v;
+  if (typeof v === 'string' && v.trim()) {
+    const t = Date.parse(v);
+    if (Number.isFinite(t)) return t;
+  }
+  return null;
+};
+
+const agyWindowToBucket = (raw: unknown): QuotaBucket | null => {
+  const w = object(raw);
+  if (!finite(w.usedPercent)) return null;
+  return {
+    utilization: w.usedPercent,
+    resets_at: typeof w.resetsAt === 'string' ? w.resetsAt : null,
+  };
+};
+
 /** Adapt HappyClaw usage without changing the Android HTTP contract. */
 export function normalizeUsage(value: unknown): QuotaSnapshot {
   const usage = object(value);
   if (usage.status === 'unsupported' || usage.status === 'needs_relogin') {
     return { data: null, fetchedAt: null, error: `HappyClaw usage: ${usage.status}` };
+  }
+  if (usage.kind === 'agy_quotas') {
+    const rawGroups = Array.isArray(usage.groups) ? usage.groups.map(object) : [];
+    const groups: QuotaGroup[] = rawGroups.map((g) => ({
+      group: typeof g.group === 'string' && g.group.trim() ? g.group.trim() : 'Default',
+      five_hour: agyWindowToBucket(g.fiveHour),
+      seven_day: agyWindowToBucket(g.weekly),
+    }));
+    const primaryGroup =
+      groups.find((g) => g.group.toLowerCase() === 'gemini models')
+      ?? groups.find((g) => g.group.toLowerCase().includes('gemini'))
+      ?? groups[0]
+      ?? null;
+    const data: QuotaData | null =
+      primaryGroup && (primaryGroup.five_hour || primaryGroup.seven_day)
+        ? {
+            five_hour: primaryGroup.five_hour,
+            seven_day: primaryGroup.seven_day,
+            seven_day_opus: null,
+            seven_day_sonnet: null,
+          }
+        : null;
+    const errStr = typeof usage.error === 'string' && usage.error.trim() ? usage.error : null;
+    return {
+      data,
+      groups,
+      fetchedAt: parseFetchedAt(usage.fetchedAt),
+      error: errStr ?? (groups.length === 0 ? 'AGY 尚无用量快照' : null),
+    };
   }
   if (usage.kind === 'codex_rate_limits') {
     const limits = Array.isArray(usage.limits) ? usage.limits.map(object) : [];
@@ -157,6 +220,7 @@ export class QuotaPoller {
   private timer: ReturnType<typeof setInterval> | null = null;
   private polling = false;
   private inFlight: Promise<void> | null = null;
+  private selectedProviderId: string | null = null;
   private snapshot: QuotaSnapshot = { data: null, fetchedAt: null, error: null };
   private sessionCookie: string | null = null; // 缓存的 happyclaw_session，401 才重登
 
@@ -178,6 +242,10 @@ export class QuotaPoller {
       if (existsSync(this.cfg.stateFile)) {
         const s = JSON.parse(readFileSync(this.cfg.stateFile, 'utf8'));
         this.enabled = Boolean(s.enabled);
+        this.selectedProviderId =
+          typeof s.selectedProviderId === 'string' && s.selectedProviderId.trim()
+            ? s.selectedProviderId.trim()
+            : null;
         // A persisted snapshot cannot prove which connection is system main now.
         // Restore the switch only; refresh before publishing any quota.
       }
@@ -191,7 +259,15 @@ export class QuotaPoller {
       mkdirSync(dirname(this.cfg.stateFile), { recursive: true });
       writeFileSync(
         this.cfg.stateFile,
-        JSON.stringify({ enabled: this.enabled, snapshot: this.snapshot }, null, 2),
+        JSON.stringify(
+          {
+            enabled: this.enabled,
+            selectedProviderId: this.selectedProviderId,
+            snapshot: this.snapshot,
+          },
+          null,
+          2,
+        ),
       );
     } catch (e) {
       console.error('[quota] 持久化状态失败:', e instanceof Error ? e.message : e);
@@ -270,6 +346,63 @@ export class QuotaPoller {
     return this.inFlight;
   }
 
+  private async fetchSystemMainId(): Promise<string | null> {
+    const provResp = await this.hcGet('/api/agent-profiles');
+    if (!provResp.ok) throw new Error(`agent-profiles 接口 HTTP ${provResp.status}`);
+    const profiles = await provResp.json();
+    const id = profiles?.inherited_model?.system_main?.model_config_id;
+    return typeof id === 'string' && id.trim() ? id.trim() : null;
+  }
+
+  private async fetchProvidersList(systemMainId: string | null): Promise<ProviderItem[]> {
+    const resp = await this.hcGet('/api/config/claude/providers');
+    if (!resp.ok) throw new Error(`providers 接口 HTTP ${resp.status}`);
+    const body = object(await resp.json());
+    const list = Array.isArray(body.providers) ? body.providers : [];
+    return list
+      .map(object)
+      .filter((p) => typeof p.id === 'string' && p.id.trim().length > 0)
+      .map((p) => {
+        const id = String(p.id).trim();
+        const name = typeof p.name === 'string' && p.name.trim() ? p.name.trim() : id;
+        const runner = typeof p.runner === 'string' && p.runner.trim() ? p.runner.trim() : 'claude';
+        return { id, name, runner, isSystemMain: systemMainId !== null && id === systemMainId };
+      });
+  }
+
+  async getProviders(): Promise<{
+    providers: ProviderItem[];
+    selectedProviderId: string | null;
+    systemMainId: string | null;
+  }> {
+    if (!this.isConfigured()) {
+      throw new Error('未配置 hcUser / hcPassFile（见 server/data/quota.config.json）');
+    }
+    const systemMainId = await this.fetchSystemMainId();
+    const providers = await this.fetchProvidersList(systemMainId);
+    return {
+      providers,
+      selectedProviderId: this.selectedProviderId,
+      systemMainId,
+    };
+  }
+
+  async selectProvider(providerId: string | null): Promise<QuotaSnapshot> {
+    const nextId = typeof providerId === 'string' && providerId.trim() ? providerId.trim() : null;
+    this.selectedProviderId = nextId;
+    this.snapshot = {
+      data: null,
+      groups: [],
+      providerId: nextId,
+      providerName: null,
+      fetchedAt: null,
+      error: null,
+    };
+    this.persistState();
+    await this.pollOnce();
+    return this.getQuota();
+  }
+
   private async fetchOnce(): Promise<void> {
     if (!this.isConfigured()) {
       this.snapshot = {
@@ -283,18 +416,45 @@ export class QuotaPoller {
     this.snapshot = { data: null, fetchedAt: null, error: null };
     try {
       // Resolve the authoritative system-main binding on every refresh.
-      const provResp = await this.hcGet('/api/agent-profiles');
-      if (!provResp.ok) throw new Error(`agent-profiles 接口 HTTP ${provResp.status}`);
-      const profiles = await provResp.json();
-      const id = profiles?.inherited_model?.system_main?.model_config_id;
-      if (typeof id !== 'string' || !id.trim()) {
+      const systemMainId = await this.fetchSystemMainId();
+      const targetId = this.selectedProviderId ?? systemMainId;
+      if (!targetId) {
         throw new Error('HappyClaw 系统主连接未配置或不可用');
       }
+
+      let providerName: string | null = null;
+      try {
+        const providers = await this.fetchProvidersList(systemMainId);
+        providerName = providers.find((p) => p.id === targetId)?.name ?? null;
+      } catch {
+        // Non-fatal: usage still works even if provider list lookup fails
+      }
+
       const usageResp = await this.hcGet(
-        `/api/config/claude/providers/${encodeURIComponent(id)}/usage`,
+        `/api/config/claude/providers/${encodeURIComponent(targetId)}/usage`,
       );
+      if (usageResp.status === 400 || usageResp.status === 404) {
+        this.snapshot = {
+          data: null,
+          groups: [],
+          providerId: targetId,
+          providerName,
+          fetchedAt: null,
+          error: '不支持用量查询',
+        };
+        this.persistState();
+        return;
+      }
       if (!usageResp.ok) throw new Error(`usage 接口 HTTP ${usageResp.status}`);
-      this.snapshot = normalizeUsage(await usageResp.json());
+      const normalized = normalizeUsage(await usageResp.json());
+      if (normalized.error === 'HappyClaw usage: unsupported') {
+        normalized.error = '不支持用量查询';
+      }
+      this.snapshot = {
+        ...normalized,
+        providerId: targetId,
+        providerName,
+      };
       this.persistState();
       console.log('[quota] 抓取成功:', JSON.stringify(this.snapshot.data));
     } catch (e) {

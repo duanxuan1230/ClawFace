@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_marginBottom="10dp">
+
+    <TextView
+        android:id="@+id/tvGroupName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Group"
+        android:textColor="@color/glass_text_primary"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp" />
+
+    <!-- 5h 行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="32dp"
+            android:layout_height="wrap_content"
+            android:text="5h"
+            android:textColor="@color/glass_text_secondary"
+            android:textSize="12sp" />
+
+        <ProgressBar
+            android:id="@+id/progressGroup5h"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="10dp"
+            android:layout_weight="1"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/widget_progress" />
+
+        <TextView
+            android:id="@+id/tvGroup5hPct"
+            android:layout_width="46dp"
+            android:layout_height="wrap_content"
+            android:text="--%"
+            android:gravity="end"
+            android:textColor="@color/glass_text_primary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvGroup5hReset"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="@color/glass_text_tertiary"
+        android:textSize="10sp"
+        android:layout_marginStart="32dp"
+        android:layout_marginBottom="6dp" />
+
+    <!-- 7d 行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="32dp"
+            android:layout_height="wrap_content"
+            android:text="7d"
+            android:textColor="@color/glass_text_secondary"
+            android:textSize="12sp" />
+
+        <ProgressBar
+            android:id="@+id/progressGroup7d"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="10dp"
+            android:layout_weight="1"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/widget_progress" />
+
+        <TextView
+            android:id="@+id/tvGroup7dPct"
+            android:layout_width="46dp"
+            android:layout_height="wrap_content"
+            android:text="--%"
+            android:gravity="end"
+            android:textColor="@color/glass_text_primary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvGroup7dReset"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="@color/glass_text_tertiary"
+        android:textSize="10sp"
+        android:layout_marginStart="32dp" />
+</LinearLayout>
