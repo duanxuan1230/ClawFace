@@ -13,10 +13,11 @@
 import { createServer } from 'node:http';
 import { WebSocketServer } from 'ws';
 import { WsServer } from './ws-server.js';
-import { createHttpHandler } from './http-api.js';
+import { createHttpHandler, isAuthorized, loadAuthToken } from './http-api.js';
 import { QuotaPoller } from './quota-poller.js';
 
 const port = parseInt(process.env.CLAWFACE_PORT ?? '9527', 10);
+const authToken = loadAuthToken();
 
 // --- WebSocket layer ---
 
@@ -30,18 +31,24 @@ const quotaPoller = new QuotaPoller();
 
 // --- HTTP layer ---
 
-const httpHandler = createHttpHandler(wsServer, quotaPoller);
+const httpHandler = createHttpHandler(wsServer, quotaPoller, authToken);
 const httpServer = createServer(httpHandler);
 
 // WebSocket upgrade only on /ws path
 httpServer.on('upgrade', (req, socket, head) => {
-  if (req.url === '/ws') {
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      wss.emit('connection', ws, req);
-    });
-  } else {
+  const urlPath = (req.url ?? '').split('?')[0];
+  if (urlPath !== '/ws') {
     socket.destroy();
+    return;
   }
+  if (!isAuthorized(req, authToken)) {
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.emit('connection', ws, req);
+  });
 });
 
 httpServer.listen(port, () => {

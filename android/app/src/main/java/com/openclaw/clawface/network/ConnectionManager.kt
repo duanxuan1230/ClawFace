@@ -36,6 +36,7 @@ class ConnectionManager {
     private var scope: CoroutineScope? = null
     private var wsClient: WsClient? = null
     private var wsUrl: String = ""
+    private var authToken: String = ""
 
     // Standby tracking
     private var standbyJob: Job? = null
@@ -46,7 +47,18 @@ class ConnectionManager {
     private var reconnectDelay = AppConfig.RECONNECT_BASE_DELAY_MS
 
     fun connect(host: String, port: Int) {
-        wsUrl = "ws://$host:$port/ws"
+        connect("http://$host:$port", "")
+    }
+
+    fun connect(baseUrl: String, token: String = "") {
+        val clean = baseUrl.trim().trimEnd('/')
+        wsUrl = when {
+            clean.startsWith("https://", ignoreCase = true) -> "wss://${clean.substring(8)}/ws"
+            clean.startsWith("http://", ignoreCase = true) -> "ws://${clean.substring(7)}/ws"
+            clean.startsWith("wss://", ignoreCase = true) || clean.startsWith("ws://", ignoreCase = true) -> "$clean/ws"
+            else -> "wss://$clean/ws"
+        }
+        authToken = token
         reconnectDelay = AppConfig.RECONNECT_BASE_DELAY_MS
 
         disconnect()
@@ -76,7 +88,7 @@ class ConnectionManager {
                 lastFrameTime = System.currentTimeMillis()
                 startStandbyDetection()
 
-                client.connect(wsUrl)
+                client.connect(wsUrl, authToken)
                     .collect { event ->
                         handleEvent(event)
                     }

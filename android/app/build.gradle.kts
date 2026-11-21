@@ -1,7 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 }
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val clawfaceBaseUrl = (localProps.getProperty("clawface.baseUrl") ?: "").replace("\"", "\\\"")
+val clawfaceToken = (localProps.getProperty("clawface.token") ?: "").replace("\"", "\\\"")
 
 android {
     namespace = "com.openclaw.clawface"
@@ -13,6 +22,8 @@ android {
         targetSdk = 34
         versionCode = 3
         versionName = "0.3.0"
+        buildConfigField("String", "CLAWFACE_BASE_URL", "\"$clawfaceBaseUrl\"")
+        buildConfigField("String", "CLAWFACE_TOKEN", "\"$clawfaceToken\"")
     }
 
     buildTypes {
@@ -27,6 +38,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     compileOptions {

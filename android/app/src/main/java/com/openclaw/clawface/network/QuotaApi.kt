@@ -80,19 +80,30 @@ object QuotaApi {
         val configured: Boolean,
     )
 
-    /** 读取 App 里保存的服务器 host/port，未配置返回 null */
-    fun readServer(context: Context): Pair<String, Int>? {
+    data class ServerEndpoint(val baseUrl: String, val token: String)
+
+    /**
+     * 读取服务地址：优先使用构建时注入的 DEFAULT_BASE_URL（域名+Nginx），
+     * 否则回退到 SharedPreferences 里保存的 host/port。
+     */
+    fun readEndpoint(context: Context): ServerEndpoint? {
+        if (AppConfig.DEFAULT_BASE_URL.isNotBlank()) {
+            return ServerEndpoint(AppConfig.DEFAULT_BASE_URL.trimEnd('/'), AppConfig.DEFAULT_TOKEN)
+        }
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val host = prefs.getString("last_host", null)?.trim()
         if (host.isNullOrEmpty()) return null
         val port = prefs.getString("last_port", null)?.toIntOrNull() ?: AppConfig.DEFAULT_PORT
-        return host to port
+        return ServerEndpoint("http://$host:$port", "")
     }
 
-    private fun base(host: String, port: Int) = "http://$host:$port"
+    private fun Request.Builder.withAuth(token: String): Request.Builder {
+        if (token.isNotBlank()) header("Authorization", "Bearer $token")
+        return this
+    }
 
-    fun fetchQuota(host: String, port: Int): Snapshot {
-        val req = Request.Builder().url("${base(host, port)}/api/quota").get().build()
+    fun fetchQuota(ep: ServerEndpoint): Snapshot {
+        val req = Request.Builder().url("${ep.baseUrl}/api/quota").withAuth(ep.token).get().build()
         client.newCall(req).execute().use { resp ->
             val body = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}")
@@ -100,8 +111,8 @@ object QuotaApi {
         }
     }
 
-    fun fetchStatus(host: String, port: Int): PollerStatus {
-        val req = Request.Builder().url("${base(host, port)}/api/quota/poller").get().build()
+    fun fetchStatus(ep: ServerEndpoint): PollerStatus {
+        val req = Request.Builder().url("${ep.baseUrl}/api/quota/poller").withAuth(ep.token).get().build()
         client.newCall(req).execute().use { resp ->
             val body = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}")
@@ -110,10 +121,11 @@ object QuotaApi {
     }
 
     /** 打开/关闭轮询，返回最新状态 */
-    fun setPoller(host: String, port: Int, enabled: Boolean): PollerStatus {
+    fun setPoller(ep: ServerEndpoint, enabled: Boolean): PollerStatus {
         val payload = JSONObject().put("enabled", enabled).toString()
         val req = Request.Builder()
-            .url("${base(host, port)}/api/quota/poller")
+            .url("${ep.baseUrl}/api/quota/poller")
+            .withAuth(ep.token)
             .post(payload.toRequestBody(JSON))
             .build()
         client.newCall(req).execute().use { resp ->
@@ -126,8 +138,8 @@ object QuotaApi {
     }
 
     /** 获取 HappyClaw 模型连接列表与当前选中的连接 */
-    fun fetchProviders(host: String, port: Int): ProvidersResult {
-        val req = Request.Builder().url("${base(host, port)}/api/quota/providers").get().build()
+    fun fetchProviders(ep: ServerEndpoint): ProvidersResult {
+        val req = Request.Builder().url("${ep.baseUrl}/api/quota/providers").withAuth(ep.token).get().build()
         client.newCall(req).execute().use { resp ->
             val body = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) throw RuntimeException("HTTP ${resp.code}")
@@ -157,10 +169,11 @@ object QuotaApi {
     }
 
     /** 切换当前选中的模型连接并立即拉取一次配额 */
-    fun selectProvider(host: String, port: Int, providerId: String?): Snapshot {
+    fun selectProvider(ep: ServerEndpoint, providerId: String?): Snapshot {
         val payload = JSONObject().put("providerId", providerId ?: JSONObject.NULL).toString()
         val req = Request.Builder()
-            .url("${base(host, port)}/api/quota/provider")
+            .url("${ep.baseUrl}/api/quota/provider")
+            .withAuth(ep.token)
             .post(payload.toRequestBody(JSON))
             .build()
         refreshClient.newCall(req).execute().use { resp ->
@@ -171,9 +184,10 @@ object QuotaApi {
     }
 
     /** 手动强制刷新：服务端立即抓一次（不论开关状态），返回最新快照。耗时较长。 */
-    fun refresh(host: String, port: Int): Snapshot {
+    fun refresh(ep: ServerEndpoint): Snapshot {
         val req = Request.Builder()
-            .url("${base(host, port)}/api/quota/refresh")
+            .url("${ep.baseUrl}/api/quota/refresh")
+            .withAuth(ep.token)
             .post(ByteArray(0).toRequestBody(null))
             .build()
         refreshClient.newCall(req).execute().use { resp ->

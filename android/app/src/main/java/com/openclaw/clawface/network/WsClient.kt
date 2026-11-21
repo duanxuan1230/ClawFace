@@ -41,14 +41,18 @@ class WsClient {
      *
      * @param url WebSocket URL, e.g. "ws://192.168.1.100:9527/ws"
      */
-    fun connect(url: String): Flow<Event> = callbackFlow {
+    fun connect(url: String, token: String = ""): Flow<Event> = callbackFlow {
         val client = OkHttpClient.Builder()
             .pingInterval(30, TimeUnit.SECONDS)
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(0, TimeUnit.MINUTES)    // no read timeout for long-lived connection
             .build()
 
-        val request = Request.Builder().url(url).build()
+        val reqBuilder = Request.Builder().url(url)
+        if (token.isNotBlank()) {
+            reqBuilder.header("Authorization", "Bearer $token")
+        }
+        val request = reqBuilder.build()
 
         val ws = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {

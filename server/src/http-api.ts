@@ -1,7 +1,53 @@
+import { timingSafeEqual } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { WsServer } from './ws-server.js';
 import type { QuotaPoller } from './quota-poller.js';
 import { handleUpdateFace } from './tool-handler.js';
+
+const DEFAULT_TOKEN_FILE = fileURLToPath(new URL('../data/auth.token', import.meta.url));
+
+export function loadAuthToken(): string | null {
+  const envTok = process.env.CLAWFACE_TOKEN?.trim();
+  if (envTok) return envTok;
+  try {
+    if (existsSync(DEFAULT_TOKEN_FILE)) {
+      const fileTok = readFileSync(DEFAULT_TOKEN_FILE, 'utf8').trim();
+      if (fileTok) return fileTok;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function safeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ba.length === bb.length && timingSafeEqual(ba, bb);
+}
+
+export function isAuthorized(req: IncomingMessage, token: string | null): boolean {
+  if (!token) return true;
+  const fwd = req.headers['x-forwarded-for'];
+  const addr = req.socket.remoteAddress ?? '';
+  const isLoopback =
+    !fwd && (addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1');
+  if (isLoopback) return true;
+
+  const auth = req.headers.authorization;
+  if (typeof auth === 'string' && auth.startsWith('Bearer ')) {
+    if (safeEqual(auth.slice(7).trim(), token)) return true;
+  }
+  const qIdx = (req.url ?? '').indexOf('?');
+  if (qIdx >= 0) {
+    const params = new URLSearchParams((req.url ?? '').slice(qIdx + 1));
+    const qTok = params.get('token');
+    if (qTok && safeEqual(qTok, token)) return true;
+  }
+  return false;
+}
 
 /**
  * HTTP API handler for the ClawFace daemon.
@@ -13,9 +59,19 @@ import { handleUpdateFace } from './tool-handler.js';
  * POST /api/quota/poller  — App 开关键：{ "enabled": true|false } 控制轮询启停
  * POST /api/quota/refresh — 手动刷新：立即强制抓一次（不论开关开没开），返回最新快照
  */
-export function createHttpHandler(wsServer: WsServer, quotaPoller: QuotaPoller) {
+export function createHttpHandler(
+  wsServer: WsServer,
+  quotaPoller: QuotaPoller,
+  authToken: string | null = null,
+) {
   return async (req: IncomingMessage, res: ServerResponse) => {
     res.setHeader('Content-Type', 'application/json');
+
+    if (!isAuthorized(req, authToken)) {
+      res.writeHead(401);
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
 
     // 去掉查询串，只按路径匹配
     const path = (req.url ?? '').split('?')[0];

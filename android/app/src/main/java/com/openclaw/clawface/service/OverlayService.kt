@@ -90,6 +90,9 @@ class OverlayService : Service() {
         startForeground(AppConfig.NOTIFICATION_ID, createNotification())
         createOverlayWindow()
         startAnimationLoop()
+        if (AppConfig.DEFAULT_BASE_URL.isNotBlank()) {
+            startConnection(AppConfig.DEFAULT_BASE_URL, AppConfig.DEFAULT_TOKEN)
+        }
     }
 
     override fun onDestroy() {
@@ -325,11 +328,16 @@ class OverlayService : Service() {
     // --- Network API ---
 
     fun startConnection(host: String, port: Int) {
+        startConnection("http://$host:$port", "")
+    }
+
+    fun startConnection(baseUrl: String, token: String = "") {
+        if (baseUrl.isBlank()) return
         stopConnection()
         connectionManager = ConnectionManager().apply {
             onFrame = { frame -> handleFrame(frame) }
             onStateChange = { state -> handleConnectionState(state) }
-            connect(host, port)
+            connect(baseUrl, token)
         }
     }
 

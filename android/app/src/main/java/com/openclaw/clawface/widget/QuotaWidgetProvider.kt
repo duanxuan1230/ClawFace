@@ -39,21 +39,20 @@ class QuotaWidgetProvider : AppWidgetProvider() {
 
         /** 同步拉取并刷新给定 widget（在后台线程调用） */
         private fun renderInto(context: Context, mgr: AppWidgetManager, ids: IntArray, force: Boolean) {
-            val server = QuotaApi.readServer(context)
+            val ep = QuotaApi.readEndpoint(context)
             ids.forEach { id ->
                 val views = RemoteViews(context.packageName, R.layout.widget_quota)
                 bindClicks(context, views)
 
-                if (server == null) {
-                    views.setTextViewText(R.id.widgetStatus, "请先在 App 里连接服务器")
+                if (ep == null) {
+                    views.setTextViewText(R.id.widgetStatus, "请先配置服务器地址")
                     views.setTextViewText(R.id.widgetUpdated, "")
                     mgr.updateAppWidget(id, views)
                     return@forEach
                 }
 
-                val (host, port) = server
                 try {
-                    val snap = if (force) QuotaApi.refresh(host, port) else QuotaApi.fetchQuota(host, port)
+                    val snap = if (force) QuotaApi.refresh(ep) else QuotaApi.fetchQuota(ep)
                     applySnapshot(views, snap)
                 } catch (e: Exception) {
                     views.setTextViewText(R.id.widgetStatus, "连接失败：${e.message ?: "网络错误"}")

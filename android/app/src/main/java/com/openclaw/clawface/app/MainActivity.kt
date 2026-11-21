@@ -111,7 +111,6 @@ class MainActivity : AppCompatActivity() {
         setupModeButtons()
         setupSliders()
         setupThemeButtons()
-        setupNetworkButtons()
         setupQuota()
         updatePermissionUI()
     }
@@ -233,39 +232,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupNetworkButtons() {
-        // Restore last used host/port
-        val prefs = getSharedPreferences("clawface_prefs", MODE_PRIVATE)
-        prefs.getString("last_host", null)?.let { binding.etHost.setText(it) }
-        val savedPort = prefs.getString("last_port", null)
-        if (!savedPort.isNullOrEmpty()) binding.etPort.setText(savedPort)
-
-        binding.btnConnect.setOnClickListener {
-            val host = binding.etHost.text.toString().trim()
-            val portStr = binding.etPort.text.toString().trim()
-            if (host.isEmpty()) {
-                binding.tvConnectionStatus.text = "Status: Enter host IP"
-                return@setOnClickListener
-            }
-            val port = portStr.toIntOrNull() ?: AppConfig.DEFAULT_PORT
-
-            // Save for next launch
-            prefs.edit()
-                .putString("last_host", host)
-                .putString("last_port", portStr)
-                .apply()
-
-            overlayService?.startConnection(host, port)
-            binding.tvConnectionStatus.text = "Status: Connecting..."
-            startConnectionStatusPolling()
-        }
-
-        binding.btnDisconnect.setOnClickListener {
-            overlayService?.stopConnection()
-            binding.tvConnectionStatus.text = "Status: Disconnected"
-        }
-    }
-
     // --- Quota（多模型订阅配额） ---
 
     private var suppressQuotaSwitch = false
@@ -275,24 +241,23 @@ class MainActivity : AppCompatActivity() {
     private fun setupQuota() {
         binding.switchQuota.setOnCheckedChangeListener { _, isChecked ->
             if (suppressQuotaSwitch) return@setOnCheckedChangeListener
-            val server = QuotaApi.readServer(this@MainActivity)
-            if (server == null) {
+            val ep = QuotaApi.readEndpoint(this@MainActivity)
+            if (ep == null) {
                 binding.tvQuotaStatus.text = "请先在上方「NETWORK」连接服务器"
                 suppressQuotaSwitch = true
                 binding.switchQuota.isChecked = false
                 suppressQuotaSwitch = false
                 return@setOnCheckedChangeListener
             }
-            val (host, port) = server
             binding.tvQuotaStatus.text = if (isChecked) "正在开启并获取配额…" else "已关闭"
             Thread {
                 try {
-                    QuotaApi.setPoller(host, port, isChecked)
+                    QuotaApi.setPoller(ep, isChecked)
                     if (isChecked) {
                         var snap: QuotaApi.Snapshot? = null
                         for (i in 0 until 25) {
                             Thread.sleep(1000)
-                            val s = QuotaApi.fetchQuota(host, port)
+                            val s = QuotaApi.fetchQuota(ep)
                             if (s.fiveHour != null || s.sevenDay != null || s.groups.isNotEmpty() || s.error != null) {
                                 snap = s; break
                             }
@@ -313,15 +278,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnQuotaRefresh.setOnClickListener {
-            val server = QuotaApi.readServer(this@MainActivity) ?: run {
+            val ep = QuotaApi.readEndpoint(this@MainActivity) ?: run {
                 binding.tvQuotaStatus.text = "请先在上方「NETWORK」连接服务器"
                 return@setOnClickListener
             }
-            val (host, port) = server
             binding.tvQuotaStatus.text = "正在刷新配额…"
             Thread {
                 try {
-                    val snap = QuotaApi.refresh(host, port)
+                    val snap = QuotaApi.refresh(ep)
                     runOnUiThread { applyQuotaToCard(snap) }
                     QuotaWidgetProvider.refreshAll(this@MainActivity)
                 } catch (e: Exception) {
@@ -334,12 +298,11 @@ class MainActivity : AppCompatActivity() {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 if (suppressProviderSelect) return
                 val provider = providerList.getOrNull(position) ?: return
-                val server = QuotaApi.readServer(this@MainActivity) ?: return
-                val (host, port) = server
+                val ep = QuotaApi.readEndpoint(this@MainActivity) ?: return
                 binding.tvQuotaStatus.text = "正在切换至 ${provider.name}…"
                 Thread {
                     try {
-                        val snap = QuotaApi.selectProvider(host, port, provider.id)
+                        val snap = QuotaApi.selectProvider(ep, provider.id)
                         runOnUiThread { applyQuotaToCard(snap) }
                         QuotaWidgetProvider.refreshAll(this@MainActivity)
                     } catch (e: Exception) {
@@ -355,16 +318,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshQuotaCard() {
-        val server = QuotaApi.readServer(this@MainActivity) ?: run {
-            binding.tvQuotaStatus.text = "请先连接服务器后再开启配额"
+        val ep = QuotaApi.readEndpoint(this@MainActivity) ?: run {
+            binding.tvQuotaStatus.text = "未配置服务器地址"
             return
         }
-        val (host, port) = server
         Thread {
             try {
-                val status = QuotaApi.fetchStatus(host, port)
-                val snap = QuotaApi.fetchQuota(host, port)
-                val providersResult = runCatching { QuotaApi.fetchProviders(host, port) }.getOrNull()
+                val status = QuotaApi.fetchStatus(ep)
+                val snap = QuotaApi.fetchQuota(ep)
+                val providersResult = runCatching { QuotaApi.fetchProviders(ep) }.getOrNull()
                 runOnUiThread {
                     suppressQuotaSwitch = true
                     binding.switchQuota.isChecked = status.enabled
@@ -476,23 +438,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startConnectionStatusPolling() {
-        binding.root.postDelayed(object : Runnable {
-            override fun run() {
-                val state = overlayService?.getConnectionState()
-                    ?: ConnectionManager.ConnectionState.DISCONNECTED
-                val statusText = when (state) {
-                    ConnectionManager.ConnectionState.DISCONNECTED -> "Disconnected"
-                    ConnectionManager.ConnectionState.CONNECTING -> "Connecting..."
-                    ConnectionManager.ConnectionState.CONNECTED -> "Connected"
-                    ConnectionManager.ConnectionState.OFFLINE -> "Reconnecting..."
-                }
-                binding.tvConnectionStatus.text = "Status: $statusText"
-                // Continue polling while connected/connecting
-                if (state != ConnectionManager.ConnectionState.DISCONNECTED && isBound) {
-                    binding.root.postDelayed(this, 2000)
-                }
-            }
-        }, 1000)
+        // Connection is managed automatically by OverlayService via default endpoint
     }
 
     private fun setupModeButtons() {

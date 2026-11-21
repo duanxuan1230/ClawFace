@@ -1,5 +1,7 @@
 package com.openclaw.clawface.config
 
+import com.openclaw.clawface.BuildConfig
+
 object AppConfig {
     // Rendering
     const val TARGET_FPS = 30
@@ -21,6 +23,8 @@ object AppConfig {
 
     // Network
     const val DEFAULT_PORT = 9527
+    const val DEFAULT_BASE_URL = BuildConfig.CLAWFACE_BASE_URL
+    const val DEFAULT_TOKEN = BuildConfig.CLAWFACE_TOKEN
     const val RECONNECT_BASE_DELAY_MS = 1000L
     const val RECONNECT_MAX_DELAY_MS = 30000L
 
