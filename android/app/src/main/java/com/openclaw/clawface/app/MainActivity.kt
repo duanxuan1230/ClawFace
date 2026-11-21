@@ -337,6 +337,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     applyQuotaToCard(snap)
+                    QuotaWidgetProvider.refreshAll(this@MainActivity)
                     when {
                         !status.configured -> binding.tvQuotaStatus.text = "服务端未配置凭据"
                         !status.enabled && snap.error == null && snap.fiveHour == null && snap.sevenDay == null && snap.groups.isEmpty() ->

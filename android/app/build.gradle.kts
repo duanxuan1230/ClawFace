@@ -20,8 +20,8 @@ android {
         applicationId = "com.openclaw.clawface"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.3.1"
         buildConfigField("String", "CLAWFACE_BASE_URL", "\"$clawfaceBaseUrl\"")
         buildConfigField("String", "CLAWFACE_TOKEN", "\"$clawfaceToken\"")
     }
@@ -58,4 +58,5 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }

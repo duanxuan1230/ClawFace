@@ -27,14 +27,27 @@ class QuotaWidgetProvider : AppWidgetProvider() {
     companion object {
         const val ACTION_REFRESH = "com.openclaw.clawface.widget.ACTION_REFRESH"
         const val ACTION_MANUAL_REFRESH = "com.openclaw.clawface.widget.ACTION_MANUAL_REFRESH"
-        private val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+        private fun formatTime(ms: Long): String =
+            SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
 
         /** 供 App 在更新配额后顺手刷新桌面组件（App 进程内，直接起线程） */
         fun refreshAll(context: Context, force: Boolean = false) {
-            val mgr = AppWidgetManager.getInstance(context)
-            val ids = mgr.getAppWidgetIds(ComponentName(context, QuotaWidgetProvider::class.java))
+            val appCtx = context.applicationContext
+            val mgr = AppWidgetManager.getInstance(appCtx)
+            val ids = mgr.getAppWidgetIds(ComponentName(appCtx, QuotaWidgetProvider::class.java))
             if (ids.isEmpty()) return
-            Thread { renderInto(context, mgr, ids, force) }.start()
+            Thread { renderInto(appCtx, mgr, ids, force) }.start()
+        }
+
+        /** 同步刷新所有小组件（供 WorkManager 后台线程调用），返回是否存在小组件 */
+        fun refreshAllSync(context: Context, force: Boolean = false): Boolean {
+            val appCtx = context.applicationContext
+            val mgr = AppWidgetManager.getInstance(appCtx)
+            val ids = mgr.getAppWidgetIds(ComponentName(appCtx, QuotaWidgetProvider::class.java))
+            if (ids.isEmpty()) return false
+            renderInto(appCtx, mgr, ids, force)
+            return true
         }
 
         /** 同步拉取并刷新给定 widget（在后台线程调用） */
@@ -54,6 +67,7 @@ class QuotaWidgetProvider : AppWidgetProvider() {
                 try {
                     val snap = if (force) QuotaApi.refresh(ep) else QuotaApi.fetchQuota(ep)
                     applySnapshot(views, snap)
+                    QuotaWidgetScheduler.markRefreshed()
                 } catch (e: Exception) {
                     views.setTextViewText(R.id.widgetStatus, "连接失败：${e.message ?: "网络错误"}")
                     views.setTextViewText(R.id.widgetUpdated, "点击刷新")
@@ -78,7 +92,7 @@ class QuotaWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(R.id.widgetStatus, "")
             }
 
-            val updated = snap.fetchedAt?.let { "更新于 ${timeFmt.format(Date(it))}" } ?: "点击刷新"
+            val updated = snap.fetchedAt?.let { "更新于 ${formatTime(it)}" } ?: "点击刷新"
             views.setTextViewText(R.id.widgetUpdated, updated)
         }
 
@@ -133,11 +147,22 @@ class QuotaWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        QuotaWidgetScheduler.ensureScheduled(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        QuotaWidgetScheduler.cancel(context)
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
+        QuotaWidgetScheduler.ensureScheduled(context)
         doUpdate(context, appWidgetIds, force = false, showRefreshing = false)
     }
 
